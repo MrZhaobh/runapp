@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>打开游戏日志</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- 添加视口元标签 -->
     <style>
         /* 设置页面的基本样式 */
         body {
@@ -20,26 +21,38 @@
         .container {
             text-align: center;
             background-color: #fff;
-            padding: 20px;
+            padding: 5%;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 400px; /* 限制最大宽度以适应桌面设备 */
         }
 
         /* 美化链接 */
         a {
             display: inline-block;
-            padding: 10px 20px;
+            padding: 2vh 5vw; /* 使用视口单位调整内边距 */
             color: #fff;
             background-color: #007bff;
             text-decoration: none;
             border-radius: 4px;
-            font-size: 16px;
+            font-size: 5vw; /* 使用相对于视口宽度的单位 */
+            min-width: 50%; /* 最小宽度 */
+            text-align: center; /* 确保文本居中 */
             transition: background-color 0.3s;
         }
 
         /* 链接的悬停效果 */
         a:hover {
             background-color: #0056b3;
+        }
+
+        /* 响应式设计 */
+        @media (min-width: 600px) {
+            a {
+                font-size: 18px; /* 在较大屏幕上使用固定字体大小 */
+                padding: 15px 20px; /* 增加内边距 */
+            }
         }
     </style>
 </head>
