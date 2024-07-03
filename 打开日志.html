@@ -79,7 +79,7 @@
     <script>
         function openGameLogWithInput() {
             var userInput = document.getElementById('userInput').value;
-            var url = 'platformsdk://1?log_switch=true&callUnity=open_unity_log_switch&userInput=' + encodeURIComponent(userInput);
+            var url = userInput;
             window.location.href = url;
         }
     </script>
