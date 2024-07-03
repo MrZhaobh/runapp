@@ -28,8 +28,18 @@
             max-width: 400px; /* 限制最大宽度以适应桌面设备 */
         }
 
-        /* 美化链接 */
-        a {
+        /* 美化输入框 */
+        input {
+            width: 80%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        /* 美化按钮 */
+        a, button {
             display: inline-block;
             padding: 2vh 5vw; /* 使用视口单位调整内边距 */
             color: #fff;
@@ -40,16 +50,19 @@
             min-width: 50%; /* 最小宽度 */
             text-align: center; /* 确保文本居中 */
             transition: background-color 0.3s;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 10px;
         }
 
-        /* 链接的悬停效果 */
-        a:hover {
+        /* 链接和按钮的悬停效果 */
+        a:hover, button:hover {
             background-color: #0056b3;
         }
 
         /* 响应式设计 */
         @media (min-width: 600px) {
-            a {
+            a, button {
                 font-size: 18px; /* 在较大屏幕上使用固定字体大小 */
                 padding: 15px 20px; /* 增加内边距 */
             }
@@ -59,6 +72,16 @@
 <body>
     <div class="container">
         <a href="platformsdk://1?log_switch=true&callUnity=open_unity_log_switch">点击打开游戏日志</a>
+        <input type="text" id="userInput" placeholder="输入内容">
+        <button onclick="openGameLogWithInput()">提交并打开游戏日志</button>
     </div>
+
+    <script>
+        function openGameLogWithInput() {
+            var userInput = document.getElementById('userInput').value;
+            var url = 'platformsdk://1?log_switch=true&callUnity=open_unity_log_switch&userInput=' + encodeURIComponent(userInput);
+            window.location.href = url;
+        }
+    </script>
 </body>
 </html>
