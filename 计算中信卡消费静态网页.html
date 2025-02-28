@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload and Process</title>
+    <style>
+        /* 全局样式 */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        /* 输入框样式 */
+        input[type="file"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+            margin-bottom: 10px;
+        }
+
+        /* 按钮样式 */
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #3498db;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        /* 定义 loading 样式 */
+        #loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        /* 旋转动画 */
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 加载图标样式 */
+        .loader {
+            border: 16px solid #f3f3f3;
+            /* Light grey */
+            border-top: 16px solid #3498db;
+            /* Blue */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+            margin: auto;
+        }
+
+        #result {
+            margin-top: 20px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: none;
+            /* 初始隐藏 */
+        }
+
+        #result h3 {
+            color: #3498db;
+        }
+
+        #result p {
+            margin: 5px 0;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
+</head>
+
+<body>
+    <input type="file" id="fileInput" multiple>
+    <button onclick="uploadFiles()">Upload and Process</button>
+    <div id="loading">
+        <div class="loader"></div>
+        <p>Processing files, please wait...</p>
+    </div>
+    <div id="result"></div>
+    <script>
+        function loadFilesFromFiles(files) {
+            return new Promise((resolve, reject) => {
+                const allData = [];
+                let loadedCount = 0;
+
+                function processFile(file) {
+                    if (!file.name.endsWith('.xls') && !file.name.endsWith('.xlsx')) {
+                        loadedCount++;
+                        if (loadedCount === files.length) {
+                            resolve(allData);
+                        }
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const sheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[sheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, range: 1 });
+
+                        const headers = jsonData[0];
+                        const dataRows = jsonData.slice(1);
+
+                        const dataList = dataRows.map(row => {
+                            const obj = {};
+                            headers.forEach((header, index) => {
+                                obj[header] = row[index];
+                            });
+                            return obj;
+                        });
+
+                        allData.push(...dataList);
+
+                        loadedCount++;
+                        if (loadedCount === files.length) {
+                            resolve(allData);
+                        }
+                    };
+                    reader.onerror = function (error) {
+                        reject(error);
+                    };
+                    reader.readAsArrayBuffer(file);
+                }
+
+                files.forEach(processFile);
+            });
+        }
+
+        function parseTableData(data) {
+            if (!data) {
+                console.log("文件内容不足，请检查文件格式。");
+                return [];
+            }
+
+            const parsedData = [];
+            data.forEach(row => {
+                try {
+                    let amount = row["交易金额"];
+                    if (typeof amount === 'string') {
+                        amount = parseFloat(amount.replace(/,/g, '').trim());
+                    }
+                    row["交易金额"] = amount;
+                    parsedData.push(row);
+                } catch (e) {
+                    console.log(`转换金额时出错: ${e}`);
+                }
+            });
+            return parsedData;
+        }
+
+        function calculateStats(data) {
+            const stats = {};
+            let count = 0;
+            let count2 = 0;
+            let count3 = 0;
+            let count4 = 0;
+
+            data.forEach(row => {
+                const month = row["入账日期"]?.slice(0, 7) || '';
+                const amount = parseFloat(row["交易金额"]) || 0;
+                const description = row["交易描述"] || '';
+
+                if (description.includes("还款")) {
+                    count3++;
+                    return;
+                }
+                if (description.includes("笔笔返")) {
+                    count4++;
+                    return;
+                }
+
+                if (!stats[month]) {
+                    stats[month] = {
+                        "消费总额": 0.0,
+                        "退款总额": 0.0,
+                        "美团抖音消费": 0.0,
+                        "美团抖音退款": 0.0,
+                        "消费明细": [],
+                        "退款明细": []
+                    };
+                }
+
+                if (amount > 0) {
+                    count++;
+                    stats[month]["消费总额"] += amount;
+                    stats[month]["消费明细"].push(amount);
+                    if (description.includes("美团支付") || description.includes("抖音支付")) {
+                        stats[month]["美团抖音消费"] += amount;
+                    }
+                } else if (amount < 0) {
+                    count2++;
+                    stats[month]["退款总额"] += Math.abs(amount);
+                    stats[month]["退款明细"].push(Math.abs(amount));
+                    if (description.includes("美团支付") || description.includes("抖音支付")) {
+                        stats[month]["美团抖音退款"] += Math.abs(amount);
+                    }
+                }
+            });
+
+            if (Object.keys(stats).length === 0) {
+                console.log("没有找到符合条件的统计数据。");
+            }
+            console.log(`计数正数：${count}`);
+            console.log(`计数负数：${count2}`);
+            console.log(`计数还款：${count3}`);
+            console.log(`计数比比返：${count4}`);
+            console.log(`len:${data.length}`);
+            console.log(`总数:${count + count2 + count3 + count4}`);
+
+            const result = {};
+            Object.keys(stats).sort().forEach(month => {
+                const m = stats[month];
+                result[month] = {
+                    "消费总额": m['消费明细'].reduce((acc, val) => acc + val, 0),
+                    "退款总额": m['退款明细'].reduce((acc, val) => acc + val, 0),
+                    "净消费额": m['消费明细'].reduce((acc, val) => acc + val, 0) - m['退款明细'].reduce((acc, val) => acc + val, 0),
+                    "美团抖音消费": m['美团抖音消费'],
+                    "美团抖音退款": m['美团抖音退款'],
+                    "美团抖音净消费": m['美团抖音消费'] - m['美团抖音退款']
+                };
+            });
+
+            return result;
+        }
+
+        async function uploadFiles() {
+            const fileInput = document.getElementById('fileInput');
+            const files = fileInput.files;
+
+            // 将 FileList 对象转换为数组
+            const fileArray = Array.from(files);
+
+            // 显示 loading 样式
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                const allData = await loadFilesFromFiles(fileArray);
+                const parsedData = parseTableData(allData);
+                const stats = calculateStats(parsedData);
+
+                // 隐藏 loading 样式
+                document.getElementById('loading').style.display = 'none';
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = ''; // 清空之前的结果
+                // 显示结果区域
+                resultDiv.style.display = 'block';
+                // 处理结果数据，以更清晰的方式显示
+                for (let month in stats) {
+                    const monthDiv = document.createElement('div');
+                    monthDiv.innerHTML = `<h3>${month}</h3>`;
+                    const statsData = stats[month];
+                    // 定义显示顺序
+                    const order = ['消费总额', '退款总额', '净消费额', '美团抖音消费', '美团抖音退款', '美团抖音净消费'];
+                    order.forEach(key => {
+                        // 增加对可能不存在字段的默认值处理
+                        let value = statsData[key];
+                        if (value === undefined) {
+                            value = '数据缺失';
+                        } else if (typeof value === 'number') {
+                            value = value.toFixed(2);
+                        }
+                        const p = document.createElement('p');
+                        p.innerHTML = `${key}: ${value}`;
+                        monthDiv.appendChild(p);
+                    });
+                    resultDiv.appendChild(monthDiv);
+                }
+            } catch (error) {
+                // 隐藏 loading 样式
+                document.getElementById('loading').style.display = 'none';
+                const resultDiv = document.getElementById('result');
+                // 显示结果区域并显示错误信息
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+
+</html>
