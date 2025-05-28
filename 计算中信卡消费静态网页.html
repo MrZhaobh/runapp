@@ -187,6 +187,10 @@
                 const amount = parseFloat(row["交易金额"]) || 0;
                 const description = row["交易描述"] || '';
 
+                if (description.includes("溢缴款")) {
+                    return;
+                }
+                
                 if (description.includes("还款")) {
                     count3++;
                     return;
