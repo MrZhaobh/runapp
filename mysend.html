@@ -299,6 +299,10 @@
                 <div style="text-align: center; color: var(--text-sub); font-size: 0.875rem;">暂无记录</div>
             </div>
         </div>
+
+        <div style="margin-top: 30px; text-align: center; border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <button class="btn" id="resetAppBtn" style="background-color: transparent; color: var(--text-sub); font-size: 0.875rem; text-decoration: underline;">清除所有本地缓存数据</button>
+        </div>
     </div>
 
     <div class="toast" id="toast">消息发送成功</div>
@@ -310,7 +314,8 @@
         const STORAGE_KEYS = {
             IDS: 'msg_sender_ids',
             HISTORY: 'msg_sender_history',
-            LAST_USED_ID: 'msg_sender_last_id'
+            LAST_USED_ID: 'msg_sender_last_id',
+            LAST_TITLE: 'msg_sender_last_title'
         };
 
         let ids = JSON.parse(localStorage.getItem(STORAGE_KEYS.IDS)) || [DEFAULT_ID];
@@ -347,6 +352,12 @@
             const lastId = localStorage.getItem(STORAGE_KEYS.LAST_USED_ID);
             if (lastId && ids.includes(lastId)) {
                 els.idSelect.value = lastId;
+            }
+
+            // Restore last title
+            const lastTitle = localStorage.getItem(STORAGE_KEYS.LAST_TITLE);
+            if (lastTitle) {
+                els.msgTitle.value = lastTitle;
             }
         }
 
@@ -434,8 +445,9 @@
             els.sendBtn.disabled = true;
             els.sendBtn.textContent = '发送中...';
 
-            // Save last used ID
+            // Save last used ID and Title
             localStorage.setItem(STORAGE_KEYS.LAST_USED_ID, id);
+            localStorage.setItem(STORAGE_KEYS.LAST_TITLE, title);
 
             const url = `http://api.chuckfang.com/${id}/${encodeURIComponent(title)}/${encodeURIComponent(content)}`;
 
@@ -498,6 +510,13 @@
                 history = [];
                 saveHistory();
                 renderHistory();
+            }
+        });
+
+        document.getElementById('resetAppBtn').addEventListener('click', () => {
+            if(confirm('确定要清除所有本地数据（包括ID列表、历史记录、默认设置）吗？')) {
+                localStorage.clear();
+                location.reload();
             }
         });
 
