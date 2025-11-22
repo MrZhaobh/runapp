@@ -269,8 +269,9 @@
             
             <!-- ID Management Area -->
             <div class="id-management" id="idManager">
-                <div class="input-wrapper" style="margin-bottom: 10px;">
-                    <input type="text" id="newIdInput" placeholder="输入新的 ID">
+                <div class="input-wrapper" style="margin-bottom: 10px; flex-wrap: wrap;">
+                    <input type="text" id="newIdInput" placeholder="输入 ID (必填)" style="flex: 1; min-width: 120px;">
+                    <input type="text" id="newNameInput" placeholder="输入代称 (选填)" style="flex: 1; min-width: 120px;">
                     <button class="btn btn-primary" id="addIdBtn" style="width: auto;">添加</button>
                 </div>
                 <div id="idList"></div>
@@ -309,8 +310,11 @@
 
     <script>
         // State
-        //const DEFAULT_ID = '9a5bb925';
-        const DEFAULT_ID = 'zbh';
+        const DEFAULT_IDS = [
+            { id: 'zbh', name: '隔壁老赵' },
+            { id: '111', name: '隔壁老杨' }
+        ];
+        
         const STORAGE_KEYS = {
             IDS: 'msg_sender_ids',
             HISTORY: 'msg_sender_history',
@@ -318,13 +322,33 @@
             LAST_TITLE: 'msg_sender_last_title'
         };
 
-        let ids = JSON.parse(localStorage.getItem(STORAGE_KEYS.IDS)) || [DEFAULT_ID];
-        let history = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY)) || [];
+        // Load and Migrate IDs
+        let rawIds = JSON.parse(localStorage.getItem(STORAGE_KEYS.IDS));
+        let ids = [];
 
-        // Ensure default ID exists
-        if (!ids.includes(DEFAULT_ID)) {
-            ids.unshift(DEFAULT_ID);
+        if (!rawIds) {
+            ids = [...DEFAULT_IDS];
+        } else if (Array.isArray(rawIds) && rawIds.length > 0 && typeof rawIds[0] === 'string') {
+            // Migration: Convert ['id1', 'id2'] to [{id:'id1', name:''}, ...]
+            ids = rawIds.map(id => {
+                const def = DEFAULT_IDS.find(d => d.id === id);
+                return { id, name: def ? def.name : '' };
+            });
+        } else {
+            ids = rawIds;
         }
+
+        // Ensure defaults exist and have correct names if missing
+        DEFAULT_IDS.forEach(def => {
+            const existing = ids.find(x => x.id === def.id);
+            if (!existing) {
+                ids.push(def);
+            } else if (!existing.name) {
+                existing.name = def.name;
+            }
+        });
+
+        let history = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY)) || [];
 
         // DOM Elements
         const els = {
@@ -332,6 +356,7 @@
             toggleIdMgrBtn: document.getElementById('toggleIdMgrBtn'),
             idManager: document.getElementById('idManager'),
             newIdInput: document.getElementById('newIdInput'),
+            newNameInput: document.getElementById('newNameInput'),
             addIdBtn: document.getElementById('addIdBtn'),
             idList: document.getElementById('idList'),
             msgTitle: document.getElementById('msgTitle'),
@@ -350,7 +375,7 @@
             
             // Restore last used ID
             const lastId = localStorage.getItem(STORAGE_KEYS.LAST_USED_ID);
-            if (lastId && ids.includes(lastId)) {
+            if (lastId && ids.find(x => x.id === lastId)) {
                 els.idSelect.value = lastId;
             }
 
@@ -363,16 +388,34 @@
 
         // Rendering Functions
         function renderIdOptions() {
-            els.idSelect.innerHTML = ids.map(id => `<option value="${id}">${id}</option>`).join('');
+            els.idSelect.innerHTML = ids.map(item => {
+                // If name exists, show name. Otherwise show ID.
+                const label = item.name ? item.name : item.id;
+                return `<option value="${item.id}">${label}</option>`;
+            }).join('');
         }
 
         function renderIdList() {
-            els.idList.innerHTML = ids.map(id => `
+            els.idList.innerHTML = ids.map(item => {
+                const isDefault = DEFAULT_IDS.some(d => d.id === item.id);
+                // In the list, we might still want to see the ID for reference, but user asked to hide ID in brackets.
+                // Assuming this applies to the main UI. For the management list, hiding the ID might make it hard to know which one it is.
+                // However, based on "具体id 不显示到括号里", I will interpret this as primarily for the main dropdown. 
+                // But to be consistent and clean, I'll apply it generally, or maybe show ID in a tooltip or smaller if really needed.
+                // Let's stick to the user's request: remove the visible ID from brackets if name exists.
+                
+                const displayName = item.name ? item.name : item.id;
+                const subText = item.name ? `<div style="font-size:0.75rem;color:var(--text-sub);">${item.id}</div>` : '';
+                
+                return `
                 <div class="id-list-item">
-                    <span>${id}</span>
-                    ${id !== DEFAULT_ID ? `<button class="btn btn-danger" onclick="removeId('${id}')">删除</button>` : '<span style="font-size:0.75rem;color:#999;">默认</span>'}
+                    <div>
+                        <div>${displayName}</div>
+                        ${subText}
+                    </div>
+                    ${!isDefault ? `<button class="btn btn-danger" onclick="removeId('${item.id}')">删除</button>` : '<span style="font-size:0.75rem;color:#999;">默认</span>'}
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function renderHistory() {
@@ -397,21 +440,24 @@
         // Actions
         function addId() {
             const newId = els.newIdInput.value.trim();
+            const newName = els.newNameInput.value.trim();
+            
             if (!newId) return showToast('请输入 ID');
-            if (ids.includes(newId)) return showToast('ID 已存在');
+            if (ids.some(x => x.id === newId)) return showToast('ID 已存在');
 
-            ids.push(newId);
+            ids.push({ id: newId, name: newName });
             saveIds();
             els.newIdInput.value = '';
+            els.newNameInput.value = '';
             renderIdOptions();
             renderIdList();
             els.idSelect.value = newId; // Select the new ID
             showToast('ID 添加成功');
         }
 
-        window.removeId = function(id) {
-            if (id === DEFAULT_ID) return;
-            ids = ids.filter(x => x !== id);
+        window.removeId = function(idToRemove) {
+            if (DEFAULT_IDS.some(d => d.id === idToRemove)) return;
+            ids = ids.filter(x => x.id !== idToRemove);
             saveIds();
             renderIdOptions();
             renderIdList();
