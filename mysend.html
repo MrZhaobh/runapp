@@ -449,7 +449,8 @@
             localStorage.setItem(STORAGE_KEYS.LAST_USED_ID, id);
             localStorage.setItem(STORAGE_KEYS.LAST_TITLE, title);
 
-            const url = `http://api.chuckfang.com/${id}/${encodeURIComponent(title)}/${encodeURIComponent(content)}`;
+            // Use HTTPS to avoid Mixed Content issues on GitHub Pages
+            const url = `https://api.chuckfang.com/${id}/${encodeURIComponent(title)}/${encodeURIComponent(content)}`;
 
             try {
                 // Using 'no-cors' mode to allow the request to be sent even if the server doesn't return CORS headers.
