@@ -452,10 +452,12 @@
             const url = `http://api.chuckfang.com/${id}/${encodeURIComponent(title)}/${encodeURIComponent(content)}`;
 
             try {
-                // Note: Using 'no-cors' mode because we can't read the response from an opaque request usually,
-                // and cross-origin might block reading. But for "fire and forget" it might be enough.
-                // Ideally, the API supports CORS.
-                await fetch(url, { method: 'GET' }); // Try standard first
+                // Using 'no-cors' mode to allow the request to be sent even if the server doesn't return CORS headers.
+                // This results in an opaque response, so we can't check status codes, but the request reaches the server.
+                await fetch(url, { 
+                    method: 'GET',
+                    mode: 'no-cors'
+                });
                 
                 // Simulate success since we might not get a readable response if CORS is missing but request went through.
                 // Or if the API returns text/html.
