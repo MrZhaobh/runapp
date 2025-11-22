@@ -424,17 +424,22 @@
                 return;
             }
 
-            els.historyList.innerHTML = history.map(item => `
+            els.historyList.innerHTML = history.map(item => {
+                // Find alias for the 'to' ID
+                const idObj = ids.find(x => x.id === item.to);
+                const displayName = idObj && idObj.name ? idObj.name : item.to;
+
+                return `
                 <div class="history-item ${item.status === 'failed' ? 'error' : ''}">
                     <div class="history-meta">
-                        <span>TO: ${item.to}</span>
+                        <span>TO: ${displayName}</span>
                         <span>${new Date(item.timestamp).toLocaleString()}</span>
                     </div>
                     <div class="history-content">
                         [${item.title}] ${item.content}
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         // Actions
