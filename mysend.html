@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>消息推送助手</title>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+            --border-color: #e5e7eb;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 24px;
+            margin-top: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            gap: 8px;
+        }
+
+        input[type="text"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+            background-color: #fff;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus,
+        select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-icon {
+            padding: 8px;
+            background-color: var(--bg-color);
+            color: var(--text-sub);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-icon:hover {
+            background-color: #e5e7eb;
+            color: var(--text-main);
+        }
+
+        .btn-danger {
+            background-color: #fee2e2;
+            color: var(--danger-color);
+            font-size: 0.875rem;
+            padding: 4px 8px;
+        }
+        
+        .btn-danger:hover {
+            background-color: #fecaca;
+        }
+
+        .id-management {
+            margin-top: 8px;
+            display: none;
+            background: var(--bg-color);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .id-management.show {
+            display: block;
+        }
+
+        .id-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .id-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-section {
+            margin-top: 32px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 24px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .history-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .history-item {
+            background: var(--bg-color);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .history-item.error {
+            border-left-color: var(--danger-color);
+        }
+
+        .history-meta {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-sub);
+            font-size: 0.75rem;
+            margin-bottom: 4px;
+        }
+
+        .history-content {
+            font-weight: 500;
+            color: var(--text-main);
+            word-break: break-all;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 16px;
+            }
+            .header h1 {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>API 消息推送</h1>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">目标 ID</label>
+            <div class="input-wrapper">
+                <select id="idSelect"></select>
+                <button class="btn btn-icon" id="toggleIdMgrBtn" title="管理 ID">⚙️</button>
+            </div>
+            
+            <!-- ID Management Area -->
+            <div class="id-management" id="idManager">
+                <div class="input-wrapper" style="margin-bottom: 10px;">
+                    <input type="text" id="newIdInput" placeholder="输入新的 ID">
+                    <button class="btn btn-primary" id="addIdBtn" style="width: auto;">添加</button>
+                </div>
+                <div id="idList"></div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">消息标题</label>
+            <input type="text" id="msgTitle" placeholder="请输入标题">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">消息内容</label>
+            <textarea id="msgContent" placeholder="请输入要发送的内容..."></textarea>
+        </div>
+
+        <button class="btn btn-primary" id="sendBtn">发送消息</button>
+
+        <div class="history-section">
+            <div class="history-header">
+                <h2 class="history-title">发送记录</h2>
+                <button class="btn btn-danger" id="clearHistoryBtn">清空</button>
+            </div>
+            <div id="historyList" class="history-list">
+                <!-- History items will be injected here -->
+                <div style="text-align: center; color: var(--text-sub); font-size: 0.875rem;">暂无记录</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">消息发送成功</div>
+
+    <script>
+        // State
+        //const DEFAULT_ID = '9a5bb925';
+        const DEFAULT_ID = 'zbh';
+        const STORAGE_KEYS = {
+            IDS: 'msg_sender_ids',
+            HISTORY: 'msg_sender_history',
+            LAST_USED_ID: 'msg_sender_last_id'
+        };
+
+        let ids = JSON.parse(localStorage.getItem(STORAGE_KEYS.IDS)) || [DEFAULT_ID];
+        let history = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY)) || [];
+
+        // Ensure default ID exists
+        if (!ids.includes(DEFAULT_ID)) {
+            ids.unshift(DEFAULT_ID);
+        }
+
+        // DOM Elements
+        const els = {
+            idSelect: document.getElementById('idSelect'),
+            toggleIdMgrBtn: document.getElementById('toggleIdMgrBtn'),
+            idManager: document.getElementById('idManager'),
+            newIdInput: document.getElementById('newIdInput'),
+            addIdBtn: document.getElementById('addIdBtn'),
+            idList: document.getElementById('idList'),
+            msgTitle: document.getElementById('msgTitle'),
+            msgContent: document.getElementById('msgContent'),
+            sendBtn: document.getElementById('sendBtn'),
+            historyList: document.getElementById('historyList'),
+            clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+            toast: document.getElementById('toast')
+        };
+
+        // Initialization
+        function init() {
+            renderIdOptions();
+            renderIdList();
+            renderHistory();
+            
+            // Restore last used ID
+            const lastId = localStorage.getItem(STORAGE_KEYS.LAST_USED_ID);
+            if (lastId && ids.includes(lastId)) {
+                els.idSelect.value = lastId;
+            }
+        }
+
+        // Rendering Functions
+        function renderIdOptions() {
+            els.idSelect.innerHTML = ids.map(id => `<option value="${id}">${id}</option>`).join('');
+        }
+
+        function renderIdList() {
+            els.idList.innerHTML = ids.map(id => `
+                <div class="id-list-item">
+                    <span>${id}</span>
+                    ${id !== DEFAULT_ID ? `<button class="btn btn-danger" onclick="removeId('${id}')">删除</button>` : '<span style="font-size:0.75rem;color:#999;">默认</span>'}
+                </div>
+            `).join('');
+        }
+
+        function renderHistory() {
+            if (history.length === 0) {
+                els.historyList.innerHTML = '<div style="text-align: center; color: var(--text-sub); font-size: 0.875rem;">暂无记录</div>';
+                return;
+            }
+
+            els.historyList.innerHTML = history.map(item => `
+                <div class="history-item ${item.status === 'failed' ? 'error' : ''}">
+                    <div class="history-meta">
+                        <span>TO: ${item.to}</span>
+                        <span>${new Date(item.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div class="history-content">
+                        [${item.title}] ${item.content}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Actions
+        function addId() {
+            const newId = els.newIdInput.value.trim();
+            if (!newId) return showToast('请输入 ID');
+            if (ids.includes(newId)) return showToast('ID 已存在');
+
+            ids.push(newId);
+            saveIds();
+            els.newIdInput.value = '';
+            renderIdOptions();
+            renderIdList();
+            els.idSelect.value = newId; // Select the new ID
+            showToast('ID 添加成功');
+        }
+
+        window.removeId = function(id) {
+            if (id === DEFAULT_ID) return;
+            ids = ids.filter(x => x !== id);
+            saveIds();
+            renderIdOptions();
+            renderIdList();
+            showToast('ID 已删除');
+        };
+
+        function saveIds() {
+            localStorage.setItem(STORAGE_KEYS.IDS, JSON.stringify(ids));
+        }
+
+        function saveHistory() {
+            localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+        }
+
+        function showToast(msg) {
+            els.toast.textContent = msg;
+            els.toast.classList.add('show');
+            setTimeout(() => els.toast.classList.remove('show'), 3000);
+        }
+
+        async function sendMessage() {
+            const id = els.idSelect.value;
+            const title = els.msgTitle.value.trim() || '无标题';
+            const content = els.msgContent.value.trim();
+
+            if (!content) {
+                showToast('请输入消息内容');
+                return;
+            }
+
+            els.sendBtn.disabled = true;
+            els.sendBtn.textContent = '发送中...';
+
+            // Save last used ID
+            localStorage.setItem(STORAGE_KEYS.LAST_USED_ID, id);
+
+            const url = `http://api.chuckfang.com/${id}/${encodeURIComponent(title)}/${encodeURIComponent(content)}`;
+
+            try {
+                // Note: Using 'no-cors' mode because we can't read the response from an opaque request usually,
+                // and cross-origin might block reading. But for "fire and forget" it might be enough.
+                // Ideally, the API supports CORS.
+                await fetch(url, { method: 'GET' }); // Try standard first
+                
+                // Simulate success since we might not get a readable response if CORS is missing but request went through.
+                // Or if the API returns text/html.
+                
+                const record = {
+                    id: Date.now(),
+                    timestamp: Date.now(),
+                    to: id,
+                    title: title,
+                    content: content,
+                    status: 'success'
+                };
+                
+                history.unshift(record);
+                if (history.length > 50) history.pop(); // Keep last 50
+                saveHistory();
+                renderHistory();
+                
+                els.msgContent.value = ''; // Clear content but keep title
+                showToast('发送请求已提交');
+            } catch (error) {
+                console.error(error);
+                const record = {
+                    id: Date.now(),
+                    timestamp: Date.now(),
+                    to: id,
+                    title: title,
+                    content: content,
+                    status: 'failed'
+                };
+                history.unshift(record);
+                saveHistory();
+                renderHistory();
+                showToast('发送失败，请检查网络或ID');
+            } finally {
+                els.sendBtn.disabled = false;
+                els.sendBtn.textContent = '发送消息';
+            }
+        }
+
+        // Event Listeners
+        els.toggleIdMgrBtn.addEventListener('click', () => {
+            els.idManager.classList.toggle('show');
+        });
+
+        els.addIdBtn.addEventListener('click', addId);
+        
+        els.sendBtn.addEventListener('click', sendMessage);
+
+        els.clearHistoryBtn.addEventListener('click', () => {
+            if(confirm('确定要清空历史记录吗？')) {
+                history = [];
+                saveHistory();
+                renderHistory();
+            }
+        });
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>
