@@ -837,6 +837,7 @@
                     <div class="btn-row">
                         <button class="btn success" onclick="uploadToGist()">⬆️ 上传到 Gist</button>
                         <button class="btn" onclick="downloadFromGist()">⬇️ 从 Gist 拉取</button>
+                        <button class="btn ghost" onclick="findGistId()">🔍 自动查找 Gist ID</button>
                         <button class="btn ghost" onclick="saveGistCreds()">保存 Gist 凭证到本地</button>
                         <button class="btn ghost" onclick="openGistInBrowser()">🔗 打开 Gist</button>
                     </div>
@@ -1561,8 +1562,11 @@
         async function downloadFromGist() {
             try {
                 saveGistCreds();
-                const { token, gistId, filename } = gistOpts();
-                if (!gistId) throw new Error('请先填写 Gist ID,或先上传一次自动创建');
+                let { token, gistId, filename } = gistOpts();
+                if (!gistId) {
+                    gistId = await findGistId({ silent: true });
+                    if (!gistId) throw new Error('未找到 Gist,请先点「上传到 Gist」创建,或手动填入 Gist ID');
+                }
                 const r = await fetch(`https://api.github.com/gists/${gistId}`, {
                     method: 'GET',
                     headers: gistHeaders(token),
@@ -1599,6 +1603,38 @@
             window.open(`https://gist.github.com/${gistId}`, '_blank');
         }
 
+        async function findGistId(opts) {
+            const silent = opts && opts.silent;
+            try {
+                const token = $('gistToken').value.trim();
+                const filename = $('gistFilename').value.trim() || 'qinglong-config.json';
+                if (!token) throw new Error('请先填写 Token');
+                if (!silent) toast('正在查找 Gist...', 'warn');
+                // 拉取最近 100 个 gist (按更新时间倒序)
+                const r = await fetch('https://api.github.com/gists?per_page=100', {
+                    headers: gistHeaders(token),
+                    cache: 'no-store',
+                });
+                if (!r.ok) {
+                    const txt = await r.text();
+                    throw new Error(`HTTP ${r.status}: ${txt.slice(0, 200)}`);
+                }
+                const list = await r.json();
+                // 优先匹配文件名,其次匹配 description
+                const match = list.find(g => g.files && g.files[filename])
+                    || list.find(g => g.description && g.description.includes('Qinglong panel config'));
+                if (!match) throw new Error('未找到匹配的 Gist (文件名: ' + filename + ')');
+                $('gistId').value = match.id;
+                saveGistCreds();
+                if (!silent) toast(`已找到 Gist: ${match.id.slice(0, 8)}...`, 'success');
+                return match.id;
+            } catch (e) {
+                if (!silent) toast('查找失败: ' + e.message, 'error');
+                console.error(e);
+                return null;
+            }
+        }
+
         // ====== Escape ======
         function escapeHtml(s) {
             return String(s == null ? '' : s)
@@ -1614,10 +1650,10 @@
             loadGistCreds();
             $('configBox').classList.add('open');
 
-            // 本地没有 URL 但 Gist 凭证齐全时,自动尝试从 Gist 拉取
+            // 本地没有 URL 但有 token 时,自动从 Gist 拉取 (没有 Gist ID 也会自动搜索)
             const hasUrls = $('primaryUrl').value.trim() || $('fallbackUrl').value.trim();
-            const hasGist = $('gistToken').value && $('gistId').value;
-            if (!hasUrls && hasGist) {
+            const hasToken = $('gistToken').value.trim();
+            if (!hasUrls && hasToken) {
                 try {
                     await downloadFromGist();
                 } catch (e) { /* 静默,允许用户手动填 */ }
