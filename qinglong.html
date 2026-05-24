@@ -1810,11 +1810,15 @@
             const value = collectEnvValueFromEditor();
             const remarks = $('envRemarks').value;
             if (!name) { toast('Key 不能为空', 'error'); return; }
+            if (!value) { toast('Value 不能为空 (服务端 Joi 校验会拒绝)', 'error'); return; }
             try {
                 if (editingEnvId) {
+                    // 老版青龙 (v2.10-) 用 _id:string,新版 (v2.11+) 用 id:number
+                    // 按 GET 返回的 id 类型自动选方言
+                    const idField = typeof editingEnvId === 'number' ? 'id' : '_id';
                     await api('/open/envs', {
                         method: 'PUT',
-                        body: JSON.stringify({ id: editingEnvId, name, value, remarks }),
+                        body: JSON.stringify({ [idField]: editingEnvId, name, value, remarks }),
                     });
                     toast('已保存', 'success');
                 } else {
