@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Loading...</title>
+<style>
+  html,body { margin:0; padding:0; height:100%; background:#111; color:#ccc; font-family:sans-serif; }
+  .center { display:flex; align-items:center; justify-content:center; height:100%; }
+</style>
+</head>
+<body>
+<div class="center">启动中...</div>
+<script>
+  // 启动时:问后端取上次最后访问的 URL,没有就用默认首页
+  (async () => {
+    const DEFAULT = 'https://mrzhaobh.github.io/runapp/';
+    const go = (u) => window.location.replace(u && /^https?:/i.test(u) ? u : DEFAULT);
+    // 2 秒兜底:不管 IPC 通不通,2 秒后强制跳默认首页
+    const fallback = setTimeout(() => go(null), 2000);
+    try {
+      const inv =
+        (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) ||
+        (window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke);
+      if (!inv) { clearTimeout(fallback); go(null); return; }
+      const last = await Promise.race([
+        inv('get_last_url', {}),
+        new Promise((r) => setTimeout(() => r(null), 1500))
+      ]);
+      clearTimeout(fallback);
+      go(last);
+    } catch (e) {
+      clearTimeout(fallback);
+      go(null);
+    }
+  })();
+</script>
+</body>
+</html>

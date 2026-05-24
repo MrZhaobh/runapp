@@ -1,0 +1,13 @@
+node_modules/
+src-tauri/target/
+src-tauri/gen/
+src-tauri/Cargo.lock
+*.log
+# APK 签名密钥 - 绝对不能推, 泄露后任何人能伪造同 package id 的 APK
+src-tauri/qlshell.keystore
+src-tauri/*.jks
+# APK 产物 - 太大, 没必要放 git
+*.apk
+*.aab
+# 测试截图
+test-screenshot-*.png
