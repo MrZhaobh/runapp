@@ -114,6 +114,13 @@
             grid-column: 1 / -1;
         }
 
+        .url-status {
+            display: inline-block;
+            margin-left: 6px;
+            font-size: 12px;
+            vertical-align: middle;
+        }
+
         label {
             font-size: 12px;
             color: var(--text-sub);
@@ -885,12 +892,16 @@
                 <div class="collapsible-body">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>主链接</label>
+                            <label>主链接 <span id="primaryStatus" class="url-status">⏳</span></label>
                             <input type="url" id="primaryUrl" placeholder="从 Gist 拉取或手动填入">
                         </div>
                         <div class="form-group">
-                            <label>备用链接 (CF 代理)</label>
+                            <label>备用链接 (CF 代理) <span id="fallbackStatus" class="url-status">⏳</span></label>
                             <input type="url" id="fallbackUrl" placeholder="从 Gist 拉取或手动填入">
+                        </div>
+                        <div class="form-group">
+                            <label>局域网链接 <span id="lanStatus" class="url-status">⏳</span></label>
+                            <input type="url" id="lanUrl" placeholder="http://192.168.3.71:5700">
                         </div>
                         <div class="form-group">
                             <label>Client ID</label>
@@ -1150,6 +1161,7 @@
             const data = {
                 primaryUrl: $('primaryUrl').value.trim(),
                 fallbackUrl: $('fallbackUrl').value.trim(),
+                lanUrl: $('lanUrl').value.trim(),
                 clientId: $('clientId').value.trim(),
                 clientSecret: $('clientSecret').value.trim(),
             };
@@ -1161,6 +1173,8 @@
                 const data = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
                 if (data.primaryUrl) $('primaryUrl').value = data.primaryUrl;
                 if (data.fallbackUrl) $('fallbackUrl').value = data.fallbackUrl;
+                if (data.lanUrl) $('lanUrl').value = data.lanUrl;
+                else if (!$('lanUrl').value) $('lanUrl').value = 'http://192.168.3.71:5700';
                 if (data.clientId) $('clientId').value = data.clientId;
                 if (data.clientSecret) $('clientSecret').value = data.clientSecret;
             } catch (e) { }
@@ -1229,22 +1243,55 @@
             }
         }
 
+        function getUrlTriple() {
+            return {
+                p: $('primaryUrl').value.trim().replace(/\/$/, ''),
+                f: $('fallbackUrl').value.trim().replace(/\/$/, ''),
+                l: $('lanUrl').value.trim().replace(/\/$/, ''),
+            };
+        }
+
         async function pickBase() {
-            const p = $('primaryUrl').value.trim().replace(/\/$/, '');
-            const f = $('fallbackUrl').value.trim().replace(/\/$/, '');
+            const { p, f, l } = getUrlTriple();
+            // 局域网优先 (同网内最快),其次主链接,最后备用 CF
+            if (l && await reach(l)) return l;
             if (p && await reach(p)) return p;
             if (f && await reach(f)) return f;
-            throw new Error('主链接和备用链接都连接失败');
+            throw new Error('主链接、备用链接、局域网链接均连接失败');
+        }
+
+        // 并发 ping 三个地址,更新各自的状态图标 (silent: 不弹 toast)
+        async function pingAllAndShowStatus(silent = false) {
+            const { p, f, l } = getUrlTriple();
+            const setIcon = (id, ok, hasUrl) => {
+                const el = $(id);
+                if (!hasUrl) { el.textContent = '—'; el.title = '未配置'; return; }
+                el.textContent = ok ? '✅' : '❌';
+                el.title = ok ? '可达' : '不可达';
+            };
+            // 先全部置为探测中
+            ['primaryStatus', 'fallbackStatus', 'lanStatus'].forEach(id => $(id).textContent = '⏳');
+            const [pOk, fOk, lOk] = await Promise.all([
+                p ? reach(p) : Promise.resolve(false),
+                f ? reach(f) : Promise.resolve(false),
+                l ? reach(l) : Promise.resolve(false),
+            ]);
+            setIcon('primaryStatus', pOk, !!p);
+            setIcon('fallbackStatus', fOk, !!f);
+            setIcon('lanStatus', lOk, !!l);
+            if (!silent) {
+                toast(`主线路:${pOk ? '✅' : '❌'}  备用:${fOk ? '✅' : '❌'}  局域网:${lOk ? '✅' : '❌'}`,
+                    (pOk || fOk || lOk) ? 'success' : 'error');
+            }
+            return { pOk, fOk, lOk, p, f, l };
         }
 
         async function testReachability() {
             setStatus('探测中...', 'warn');
-            const p = $('primaryUrl').value.trim().replace(/\/$/, '');
-            const f = $('fallbackUrl').value.trim().replace(/\/$/, '');
-            const pOk = p ? await reach(p) : false;
-            const fOk = f ? await reach(f) : false;
-            toast(`主线路: ${pOk ? '✅' : '❌'}  备用线路: ${fOk ? '✅' : '❌'}`, pOk || fOk ? 'success' : 'error');
-            if (pOk) { activeBase = p; $('activeBase').textContent = p; }
+            const { pOk, fOk, lOk, p, f, l } = await pingAllAndShowStatus(false);
+            // 按局域网 > 主 > 备用 的优先级自动切换 activeBase
+            if (lOk) { activeBase = l; $('activeBase').textContent = l; }
+            else if (pOk) { activeBase = p; $('activeBase').textContent = p; }
             else if (fOk) { activeBase = f; $('activeBase').textContent = f; }
             setStatus(token ? '已登录' : '未登录', token ? 'ok' : '');
         }
@@ -1828,6 +1875,7 @@
                 const payload = {
                     primaryUrl: $('primaryUrl').value.trim(),
                     fallbackUrl: $('fallbackUrl').value.trim(),
+                    lanUrl: $('lanUrl').value.trim(),
                     clientId: $('clientId').value.trim(),
                     clientSecret: $('clientSecret').value.trim(),
                     updatedAt: new Date().toISOString(),
@@ -1896,6 +1944,7 @@
                 const j = JSON.parse(content);
                 if (j.primaryUrl) $('primaryUrl').value = j.primaryUrl;
                 if (j.fallbackUrl) $('fallbackUrl').value = j.fallbackUrl;
+                if (j.lanUrl) $('lanUrl').value = j.lanUrl;
                 if (j.clientId) $('clientId').value = j.clientId;
                 if (j.clientSecret) $('clientSecret').value = j.clientSecret;
                 saveLocalCreds();
@@ -1960,13 +2009,16 @@
             // 两个折叠面板默认都收起 (gistBox 本身就是收起的, configBox 这里不再展开)
 
             // 本地没有 URL 但有 token 时,自动从 Gist 拉取 (没有 Gist ID 也会自动搜索)
-            const hasUrls = $('primaryUrl').value.trim() || $('fallbackUrl').value.trim();
+            const hasUrls = $('primaryUrl').value.trim() || $('fallbackUrl').value.trim() || $('lanUrl').value.trim();
             const hasToken = $('gistToken').value.trim();
             if (!hasUrls && hasToken) {
                 try {
                     await downloadFromGist();
                 } catch (e) { /* 静默,允许用户手动填 */ }
             }
+
+            // 进页面自动 ping 三个地址,显示 ✅/❌ (静默,不弹 toast)
+            pingAllAndShowStatus(true).catch(() => { });
 
             if (loadTokenCache()) {
                 $('activeBase').textContent = activeBase;
@@ -1978,7 +2030,7 @@
                 } catch (e) {
                     setStatus('Token 已失效', '');
                 }
-            } else if ($('clientId').value && $('clientSecret').value && ($('primaryUrl').value || $('fallbackUrl').value)) {
+            } else if ($('clientId').value && $('clientSecret').value && ($('primaryUrl').value || $('fallbackUrl').value || $('lanUrl').value)) {
                 login();
             }
         })();
