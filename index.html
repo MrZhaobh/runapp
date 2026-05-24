@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>导航 · RunApp</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+            --sub: #6b7280;
+            --border: #e5e7eb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #eef2ff 0%, #f3f4f6 60%, #fdf4ff 100%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 24px 16px;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: var(--primary);
+            margin-bottom: 6px;
+            letter-spacing: .02em;
+        }
+
+        .header p {
+            color: var(--sub);
+            font-size: 14px;
+        }
+
+        .search-row {
+            margin: 18px auto 24px;
+            max-width: 520px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .search-row input {
+            flex: 1;
+            border: 1px solid var(--border);
+            background: var(--card);
+            border-radius: 999px;
+            padding: 11px 18px;
+            font-size: 15px;
+            outline: none;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .04);
+            transition: border-color .15s, box-shadow .15s;
+        }
+
+        .search-row input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, .15);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 14px;
+        }
+
+        .nav-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 18px;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
+            transition: transform .15s, box-shadow .2s, border-color .15s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--accent, var(--primary));
+            opacity: 0;
+            transition: opacity .2s;
+            pointer-events: none;
+        }
+
+        .nav-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+            border-color: transparent;
+        }
+
+        .nav-card:active {
+            transform: translateY(0);
+        }
+
+        .icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: #fff;
+            background: var(--accent, var(--primary));
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+        }
+
+        .title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .desc {
+            font-size: 13px;
+            color: var(--sub);
+            line-height: 1.45;
+        }
+
+        .filename {
+            margin-top: auto;
+            font-size: 11px;
+            color: var(--sub);
+            font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+            background: #f9fafb;
+            padding: 3px 8px;
+            border-radius: 4px;
+            align-self: flex-start;
+            border: 1px solid var(--border);
+        }
+
+        .empty {
+            text-align: center;
+            color: var(--sub);
+            padding: 40px;
+            font-size: 14px;
+        }
+
+        .footer {
+            margin-top: 32px;
+            text-align: center;
+            color: var(--sub);
+            font-size: 12px;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 16px 10px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+
+            .nav-card {
+                padding: 14px;
+                border-radius: 14px;
+                gap: 8px;
+            }
+
+            .icon {
+                width: 38px;
+                height: 38px;
+                font-size: 19px;
+                border-radius: 10px;
+            }
+
+            .title {
+                font-size: 14px;
+            }
+
+            .desc {
+                font-size: 12px;
+            }
+
+            .filename {
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 RunApp 导航</h1>
+            <p>本目录下所有工具与小页面</p>
+        </div>
+
+        <div class="search-row">
+            <input id="search" type="search" placeholder="搜索页面..." oninput="renderCards()">
+        </div>
+
+        <div class="grid" id="grid"></div>
+
+        <div class="footer">
+            <span id="count"></span>
+        </div>
+    </div>
+
+    <script>
+        // 页面列表 - 新增页面时在此添加即可
+        const PAGES = [
+            {
+                file: 'qinglong.html',
+                title: '青龙面板管理器',
+                desc: '远程管理青龙面板的定时任务和环境变量, 支持 WebDAV 同步凭证',
+                icon: '🐉',
+                color: '#10b981',
+            },
+            {
+                file: 'mysend.html',
+                title: '消息推送助手',
+                desc: '快速发送消息通知',
+                icon: '📨',
+                color: '#4f46e5',
+            },
+            {
+                file: '打开日志.html',
+                title: '打开游戏日志',
+                desc: '深度链接 / 唤起 App 查看日志',
+                icon: '📜',
+                color: '#f59e0b',
+            },
+            {
+                file: 'gala深度链接.html',
+                title: 'Gala 深度链接',
+                desc: '生成并打开 Gala 相关的 deeplink',
+                icon: '🎮',
+                color: '#ec4899',
+            },
+            {
+                file: '计算中信卡消费静态网页.html',
+                title: '中信卡消费计算',
+                desc: '解析账单文件, 统计与计算消费金额',
+                icon: '💳',
+                color: '#3b82f6',
+            },
+        ];
+
+        function $(id) { return document.getElementById(id); }
+
+        function renderCards() {
+            const kw = $('search').value.trim().toLowerCase();
+            const list = PAGES.filter(p => {
+                if (!kw) return true;
+                return p.title.toLowerCase().includes(kw)
+                    || p.desc.toLowerCase().includes(kw)
+                    || p.file.toLowerCase().includes(kw);
+            });
+            const grid = $('grid');
+            if (list.length === 0) {
+                grid.innerHTML = '<div class="empty" style="grid-column:1/-1">没有匹配的页面</div>';
+            } else {
+                grid.innerHTML = list.map(p => `
+                    <a class="nav-card" href="${encodeURI(p.file)}" style="--accent:${p.color}">
+                        <div class="icon">${p.icon}</div>
+                        <div class="title">${p.title}</div>
+                        <div class="desc">${p.desc}</div>
+                        <span class="filename">${p.file}</span>
+                    </a>
+                `).join('');
+            }
+            $('count').textContent = `共 ${PAGES.length} 个页面${kw ? `, 匹配 ${list.length} 个` : ''}`;
+        }
+
+        renderCards();
+    </script>
+</body>
+
+</html>

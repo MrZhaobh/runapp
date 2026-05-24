@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>青龙面板管理器</title>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+            --border-color: #e5e7eb;
+            --danger-color: #ef4444;
+            --danger-hover: #dc2626;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --info-color: #3b82f6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 16px;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        h1 {
+            font-size: 20px;
+            color: var(--primary-color);
+        }
+
+        h2 {
+            font-size: 16px;
+            color: var(--text-main);
+            margin-bottom: 12px;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 500;
+            background: #fee2e2;
+            color: var(--danger-color);
+        }
+
+        .status-pill.ok {
+            background: #d1fae5;
+            color: var(--success-color);
+        }
+
+        .status-pill.warn {
+            background: #fef3c7;
+            color: var(--warning-color);
+        }
+
+        .status-pill .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 12px;
+            color: var(--text-sub);
+            font-weight: 500;
+        }
+
+        input[type=text],
+        input[type=password],
+        input[type=url],
+        textarea,
+        select {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 14px;
+            background: #fff;
+            outline: none;
+            transition: border-color .15s;
+            width: 100%;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: var(--primary-color);
+        }
+
+        textarea {
+            font-family: ui-monospace, "Cascadia Code", "Fira Code", Consolas, monospace;
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: filter .15s, background-color .15s;
+            background: var(--primary-color);
+            color: #fff;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        .btn.ghost {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn.ghost:hover {
+            background: #f9fafb;
+        }
+
+        .btn.small {
+            padding: 4px 10px;
+            font-size: 12px;
+        }
+
+        .btn.danger {
+            background: var(--danger-color);
+        }
+
+        .btn.danger:hover {
+            background: var(--danger-hover);
+        }
+
+        .btn.success {
+            background: var(--success-color);
+        }
+
+        .btn.success:hover {
+            filter: brightness(.92);
+        }
+
+        .btn.warn {
+            background: var(--warning-color);
+            color: #fff;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 16px;
+        }
+
+        .tab {
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-sub);
+            border-bottom: 2px solid transparent;
+            transition: color .15s, border-color .15s;
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        th {
+            background: #f9fafb;
+            color: var(--text-sub);
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover td {
+            background: #f9fafb;
+        }
+
+        .table-wrap {
+            max-height: 560px;
+            overflow: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .badge.green {
+            background: #d1fae5;
+            color: var(--success-color);
+        }
+
+        .badge.red {
+            background: #fee2e2;
+            color: var(--danger-color);
+        }
+
+        .badge.yellow {
+            background: #fef3c7;
+            color: var(--warning-color);
+        }
+
+        .badge.gray {
+            background: #e5e7eb;
+            color: var(--text-sub);
+        }
+
+        .ellipsis {
+            max-width: 260px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            padding: 16px;
+        }
+
+        .modal-backdrop.show {
+            display: flex;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 720px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 16px;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 22px;
+            color: var(--text-sub);
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-body {
+            padding: 16px 20px;
+            overflow: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 12px 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .log-box {
+            background: #0f172a;
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 14px;
+            font-family: ui-monospace, "Cascadia Code", "Fira Code", Consolas, monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 60vh;
+            overflow: auto;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #111827;
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity .2s;
+            z-index: 100;
+            max-width: 90vw;
+            text-align: center;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .toast.error {
+            background: var(--danger-color);
+        }
+
+        .toast.success {
+            background: var(--success-color);
+        }
+
+        .toast.warn {
+            background: var(--warning-color);
+        }
+
+        .collapsible {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .collapsible-header {
+            padding: 10px 14px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+
+        .collapsible-body {
+            padding: 0 14px 14px;
+            display: none;
+        }
+
+        .collapsible.open .collapsible-body {
+            display: block;
+        }
+
+        .collapsible-header .arrow {
+            transition: transform .15s;
+            color: var(--text-sub);
+        }
+
+        .collapsible.open .arrow {
+            transform: rotate(90deg);
+        }
+
+        .checkbox-cell {
+            width: 32px;
+            text-align: center;
+        }
+
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-sub);
+            font-size: 14px;
+        }
+
+        .text-sub {
+            color: var(--text-sub);
+            font-size: 12px;
+        }
+
+        .row-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .endpoint-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-sub);
+            flex-wrap: wrap;
+        }
+
+        .endpoint-row code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        /* ====== 移动端适配 ====== */
+        @media (max-width: 720px) {
+            body {
+                padding: 8px;
+                font-size: 14px;
+                -webkit-text-size-adjust: 100%;
+            }
+
+            .card {
+                padding: 14px;
+                border-radius: 10px;
+                margin-bottom: 10px;
+            }
+
+            h1 {
+                font-size: 17px;
+            }
+
+            .header {
+                gap: 6px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            input[type=text],
+            input[type=password],
+            input[type=url],
+            textarea,
+            select {
+                font-size: 16px;
+                /* 防止 iOS 自动放大 */
+                padding: 10px 12px;
+            }
+
+            .btn {
+                padding: 10px 14px;
+                font-size: 14px;
+                min-height: 40px;
+            }
+
+            .btn.small {
+                padding: 8px 10px;
+                font-size: 12px;
+                min-height: 34px;
+            }
+
+            .btn-row {
+                gap: 6px;
+            }
+
+            .btn-row .btn {
+                flex: 1 1 calc(50% - 6px);
+            }
+
+            .tabs {
+                position: sticky;
+                top: 0;
+                background: var(--card-bg);
+                z-index: 10;
+                margin: -14px -14px 14px;
+                padding: 0 14px;
+            }
+
+            .tab {
+                padding: 12px 10px;
+                font-size: 13px;
+                flex: 1;
+                text-align: center;
+            }
+
+            .toolbar {
+                gap: 8px;
+            }
+
+            .toolbar>div {
+                width: 100%;
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .search-input {
+                min-width: 100%;
+            }
+
+            /* 表格 -> 卡片 */
+            .table-wrap {
+                max-height: none;
+                border: none;
+                border-radius: 0;
+                overflow: visible;
+            }
+
+            table,
+            thead,
+            tbody,
+            tr,
+            td {
+                display: block;
+                width: 100%;
+            }
+
+            thead {
+                display: none;
+            }
+
+            tbody tr {
+                position: relative;
+                border: 1px solid var(--border-color);
+                border-radius: 10px;
+                margin-bottom: 10px;
+                padding: 12px 12px 10px;
+                background: #fff;
+            }
+
+            tbody tr:hover td {
+                background: transparent;
+            }
+
+            td {
+                border: none;
+                padding: 4px 0;
+                font-size: 13px;
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 10px;
+                min-height: 0;
+            }
+
+            td::before {
+                content: attr(data-label);
+                font-weight: 500;
+                color: var(--text-sub);
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: .04em;
+                flex: 0 0 64px;
+                padding-top: 2px;
+            }
+
+            td:not([data-label])::before {
+                content: none;
+            }
+
+            td.checkbox-cell {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                width: auto;
+                padding: 0;
+            }
+
+            td.checkbox-cell::before {
+                display: none;
+            }
+
+            td.checkbox-cell input {
+                width: 20px;
+                height: 20px;
+            }
+
+            .ellipsis {
+                max-width: 100%;
+                white-space: normal;
+                word-break: break-all;
+                text-align: right;
+                flex: 1;
+            }
+
+            .row-actions {
+                width: 100%;
+                gap: 6px;
+            }
+
+            .row-actions .btn {
+                flex: 1 1 calc(33.33% - 6px);
+                padding: 8px 4px;
+                font-size: 12px;
+                min-height: 36px;
+            }
+
+            td[data-label="操作"] {
+                display: block;
+                margin-top: 8px;
+                padding-top: 8px;
+                border-top: 1px dashed var(--border-color);
+            }
+
+            td[data-label="操作"]::before {
+                display: none;
+            }
+
+            /* 弹窗全屏化 */
+            .modal-backdrop {
+                padding: 0;
+                align-items: flex-end;
+            }
+
+            .modal {
+                max-width: 100%;
+                max-height: 92vh;
+                border-radius: 14px 14px 0 0;
+                width: 100%;
+            }
+
+            .modal-header {
+                padding: 14px 16px;
+            }
+
+            .modal-body {
+                padding: 14px 16px;
+            }
+
+            .modal-footer {
+                padding: 10px 14px env(safe-area-inset-bottom, 10px);
+            }
+
+            .log-box {
+                font-size: 11px;
+                max-height: 65vh;
+            }
+
+            .collapsible-header {
+                padding: 12px 14px;
+                font-size: 14px;
+            }
+
+            .endpoint-row {
+                font-size: 11px;
+            }
+        }
+
+        @media (min-width: 721px) {
+
+            th.col-hide-sm,
+            td.col-hide-sm {
+                /* 桌面端不隐藏 */
+            }
+        }
+
+        @media (max-width: 720px) {
+
+            th.col-hide-sm,
+            td.col-hide-sm {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>🐉 青龙面板管理器</h1>
+                <span id="loginStatus" class="status-pill"><span class="dot"></span>未登录</span>
+            </div>
+
+            <div class="collapsible" id="configBox">
+                <div class="collapsible-header" onclick="toggleCollapsible('configBox')">
+                    <strong>连接配置</strong>
+                    <span class="arrow">▶</span>
+                </div>
+                <div class="collapsible-body">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>主链接</label>
+                            <input type="url" id="primaryUrl" placeholder="从 WebDAV 拉取或手动填入">
+                        </div>
+                        <div class="form-group">
+                            <label>备用链接 (CF 代理)</label>
+                            <input type="url" id="fallbackUrl" placeholder="从 WebDAV 拉取或手动填入">
+                        </div>
+                        <div class="form-group">
+                            <label>Client ID</label>
+                            <input type="text" id="clientId" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label>Client Secret</label>
+                            <input type="password" id="clientSecret" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="endpoint-row" style="margin-top:10px">
+                        当前正在使用: <code id="activeBase">—</code>
+                        <span id="tokenInfo" class="text-sub"></span>
+                    </div>
+                    <div class="btn-row">
+                        <button class="btn" onclick="login()">登录 / 获取 Token</button>
+                        <button class="btn ghost" onclick="testReachability()">测试线路</button>
+                        <button class="btn ghost" onclick="clearLocalCreds()">清空本地凭证</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="collapsible" id="webdavBox">
+                <div class="collapsible-header" onclick="toggleCollapsible('webdavBox')">
+                    <strong>WebDAV 同步 (坚果云)</strong>
+                    <span class="arrow">▶</span>
+                </div>
+                <div class="collapsible-body">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>WebDAV URL</label>
+                            <input type="url" id="webdavUrl" placeholder="https://dav.jianguoyun.com/dav/">
+                        </div>
+                        <div class="form-group">
+                            <label>用户名 (账号邮箱)</label>
+                            <input type="text" id="webdavUser" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label>密码 (应用密码)</label>
+                            <input type="password" id="webdavPass" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label>同步文件路径</label>
+                            <input type="text" id="webdavPath" value="/qinglong-config.json">
+                        </div>
+                    </div>
+                    <p class="text-sub" style="margin-top:8px">
+                        坚果云需要在「账户信息 → 安全选项 → 第三方应用授权」里创建应用密码。提交的 JSON 仅包含青龙的 URL / Client ID / Client Secret。
+                    </p>
+                    <div class="btn-row">
+                        <button class="btn success" onclick="uploadToWebdav()">⬆️ 上传到 WebDAV</button>
+                        <button class="btn" onclick="downloadFromWebdav()">⬇️ 从 WebDAV 拉取</button>
+                        <button class="btn ghost" onclick="saveWebdavCreds()">保存 WebDAV 凭证到本地</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="tabs">
+                <div class="tab active" data-tab="tasks" onclick="switchTab('tasks')">📋 定时任务</div>
+                <div class="tab" data-tab="envs" onclick="switchTab('envs')">🔐 环境变量</div>
+            </div>
+
+            <div class="tab-panel active" id="panel-tasks">
+                <div class="toolbar">
+                    <input class="search-input" type="text" id="taskSearch" placeholder="搜索任务名 / 命令 / 标签..."
+                        oninput="renderTasks()">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <button class="btn ghost" onclick="loadTasks()">🔄 刷新</button>
+                        <button class="btn warn" onclick="bulkRun()">▶ 批量执行</button>
+                        <button class="btn danger" onclick="bulkDelete()">🗑 批量删除</button>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table id="taskTable">
+                        <thead>
+                            <tr>
+                                <th class="checkbox-cell"><input type="checkbox" onchange="toggleAllTasks(this)"></th>
+                                <th>名称</th>
+                                <th class="col-hide-sm">命令</th>
+                                <th class="col-hide-sm">定时</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="taskBody"></tbody>
+                    </table>
+                </div>
+                <p class="text-sub" id="taskCount" style="margin-top:8px"></p>
+            </div>
+
+            <div class="tab-panel" id="panel-envs">
+                <div class="toolbar">
+                    <input class="search-input" type="text" id="envSearch" placeholder="搜索 key / value / 备注..."
+                        oninput="renderEnvs()">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <button class="btn ghost" onclick="loadEnvs()">🔄 刷新</button>
+                        <button class="btn" onclick="openEnvEditor()">➕ 新增</button>
+                        <button class="btn warn" onclick="bulkToggleEnv()">⇅ 批量启停</button>
+                        <button class="btn danger" onclick="bulkDeleteEnv()">🗑 批量删除</button>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table id="envTable">
+                        <thead>
+                            <tr>
+                                <th class="checkbox-cell"><input type="checkbox" onchange="toggleAllEnvs(this)"></th>
+                                <th>Key</th>
+                                <th>Value</th>
+                                <th class="col-hide-sm">备注</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="envBody"></tbody>
+                    </table>
+                </div>
+                <p class="text-sub" id="envCount" style="margin-top:8px"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日志查看弹窗 -->
+    <div class="modal-backdrop" id="logModal" onclick="closeModalIfBackdrop(event, 'logModal')">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="logTitle">任务日志</h3>
+                <button class="modal-close" onclick="closeModal('logModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="log-box" id="logContent">加载中...</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn ghost" onclick="refreshLog()">🔄 刷新</button>
+                <button class="btn" onclick="closeModal('logModal')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 环境变量编辑弹窗 -->
+    <div class="modal-backdrop" id="envModal" onclick="closeModalIfBackdrop(event, 'envModal')">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="envModalTitle">编辑环境变量</h3>
+                <button class="modal-close" onclick="closeModal('envModal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Key (变量名)</label>
+                        <input type="text" id="envName">
+                    </div>
+                    <div class="form-group">
+                        <label>备注</label>
+                        <input type="text" id="envRemarks">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top:12px">
+                    <label>Value (变量值)</label>
+                    <textarea id="envValue"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn ghost" onclick="closeModal('envModal')">取消</button>
+                <button class="btn" onclick="saveEnv()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ====== 状态 ======
+        const STORE_KEY = 'qinglong_config_v1';
+        const WEBDAV_KEY = 'qinglong_webdav_v1';
+        const TOKEN_KEY = 'qinglong_token_v1';
+        let activeBase = '';
+        let token = '';
+        let tokenExpire = 0;
+        let allTasks = [];
+        let allEnvs = [];
+        let currentLogId = null;
+        let editingEnvId = null;
+
+        // ====== 工具函数 ======
+        function $(id) { return document.getElementById(id); }
+
+        function toast(msg, type = '') {
+            const t = $('toast');
+            t.textContent = msg;
+            t.className = 'toast show ' + type;
+            clearTimeout(toast._t);
+            toast._t = setTimeout(() => t.classList.remove('show'), 2400);
+        }
+
+        function toggleCollapsible(id) {
+            $(id).classList.toggle('open');
+        }
+
+        function switchTab(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+            if (name === 'tasks' && allTasks.length === 0) loadTasks();
+            if (name === 'envs' && allEnvs.length === 0) loadEnvs();
+        }
+
+        function openModal(id) { $(id).classList.add('show'); }
+        function closeModal(id) { $(id).classList.remove('show'); }
+        function closeModalIfBackdrop(e, id) { if (e.target.id === id) closeModal(id); }
+
+        function setStatus(text, cls) {
+            const el = $('loginStatus');
+            el.innerHTML = `<span class="dot"></span>${text}`;
+            el.className = 'status-pill ' + (cls || '');
+        }
+
+        // ====== 配置 / 凭证持久化 ======
+        function saveLocalCreds() {
+            const data = {
+                primaryUrl: $('primaryUrl').value.trim(),
+                fallbackUrl: $('fallbackUrl').value.trim(),
+                clientId: $('clientId').value.trim(),
+                clientSecret: $('clientSecret').value.trim(),
+            };
+            localStorage.setItem(STORE_KEY, JSON.stringify(data));
+        }
+
+        function loadLocalCreds() {
+            try {
+                const data = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+                if (data.primaryUrl) $('primaryUrl').value = data.primaryUrl;
+                if (data.fallbackUrl) $('fallbackUrl').value = data.fallbackUrl;
+                if (data.clientId) $('clientId').value = data.clientId;
+                if (data.clientSecret) $('clientSecret').value = data.clientSecret;
+            } catch (e) { }
+        }
+
+        function clearLocalCreds() {
+            if (!confirm('确定清空本地保存的青龙凭证?')) return;
+            localStorage.removeItem(STORE_KEY);
+            localStorage.removeItem(TOKEN_KEY);
+            $('clientId').value = '';
+            $('clientSecret').value = '';
+            token = '';
+            tokenExpire = 0;
+            setStatus('未登录', '');
+            $('tokenInfo').textContent = '';
+            toast('已清空', 'success');
+        }
+
+        function saveWebdavCreds() {
+            const data = {
+                url: $('webdavUrl').value.trim(),
+                user: $('webdavUser').value.trim(),
+                pass: $('webdavPass').value,
+                path: $('webdavPath').value.trim() || '/qinglong-config.json',
+            };
+            localStorage.setItem(WEBDAV_KEY, JSON.stringify(data));
+            toast('WebDAV 凭证已保存到浏览器', 'success');
+        }
+
+        function loadWebdavCreds() {
+            try {
+                const data = JSON.parse(localStorage.getItem(WEBDAV_KEY) || '{}');
+                if (data.url) $('webdavUrl').value = data.url;
+                if (data.user) $('webdavUser').value = data.user;
+                if (data.pass) $('webdavPass').value = data.pass;
+                if (data.path) $('webdavPath').value = data.path;
+            } catch (e) { }
+        }
+
+        function saveTokenCache() {
+            localStorage.setItem(TOKEN_KEY, JSON.stringify({ token, tokenExpire, activeBase }));
+        }
+
+        function loadTokenCache() {
+            try {
+                const data = JSON.parse(localStorage.getItem(TOKEN_KEY) || '{}');
+                if (data.token && data.tokenExpire && data.tokenExpire > Date.now()) {
+                    token = data.token;
+                    tokenExpire = data.tokenExpire;
+                    activeBase = data.activeBase || '';
+                    return true;
+                }
+            } catch (e) { }
+            return false;
+        }
+
+        // ====== 线路探测 ======
+        async function reach(url) {
+            const ctrl = new AbortController();
+            const id = setTimeout(() => ctrl.abort(), 5000);
+            try {
+                const r = await fetch(url.replace(/\/$/, '') + '/api/system', { signal: ctrl.signal, cache: 'no-store' });
+                clearTimeout(id);
+                return r.ok || r.status === 401 || r.status === 403;
+            } catch (e) {
+                clearTimeout(id);
+                return false;
+            }
+        }
+
+        async function pickBase() {
+            const p = $('primaryUrl').value.trim().replace(/\/$/, '');
+            const f = $('fallbackUrl').value.trim().replace(/\/$/, '');
+            if (p && await reach(p)) return p;
+            if (f && await reach(f)) return f;
+            throw new Error('主链接和备用链接都连接失败');
+        }
+
+        async function testReachability() {
+            setStatus('探测中...', 'warn');
+            const p = $('primaryUrl').value.trim().replace(/\/$/, '');
+            const f = $('fallbackUrl').value.trim().replace(/\/$/, '');
+            const pOk = p ? await reach(p) : false;
+            const fOk = f ? await reach(f) : false;
+            toast(`主线路: ${pOk ? '✅' : '❌'}  备用线路: ${fOk ? '✅' : '❌'}`, pOk || fOk ? 'success' : 'error');
+            if (pOk) { activeBase = p; $('activeBase').textContent = p; }
+            else if (fOk) { activeBase = f; $('activeBase').textContent = f; }
+            setStatus(token ? '已登录' : '未登录', token ? 'ok' : '');
+        }
+
+        // ====== 登录 / token 管理 ======
+        async function login() {
+            saveLocalCreds();
+            const id = $('clientId').value.trim();
+            const sec = $('clientSecret').value.trim();
+            if (!id || !sec) { toast('请先填写 Client ID 和 Secret', 'error'); return; }
+            setStatus('登录中...', 'warn');
+            try {
+                activeBase = await pickBase();
+                $('activeBase').textContent = activeBase;
+                const url = `${activeBase}/open/auth/token?client_id=${encodeURIComponent(id)}&client_secret=${encodeURIComponent(sec)}`;
+                const r = await fetch(url, { cache: 'no-store' });
+                const j = await r.json();
+                if (j.code !== 200) throw new Error(j.message || '登录失败: ' + JSON.stringify(j));
+                token = j.data.token;
+                tokenExpire = j.data.expiration ? j.data.expiration * 1000 : (Date.now() + 30 * 24 * 3600 * 1000);
+                saveTokenCache();
+                setStatus('已登录', 'ok');
+                updateTokenInfo();
+                toast('登录成功', 'success');
+                loadTasks();
+            } catch (e) {
+                console.error(e);
+                setStatus('登录失败', '');
+                toast('登录失败: ' + e.message, 'error');
+            }
+        }
+
+        function updateTokenInfo() {
+            if (!token) { $('tokenInfo').textContent = ''; return; }
+            const left = Math.max(0, Math.floor((tokenExpire - Date.now()) / 1000 / 86400));
+            $('tokenInfo').textContent = `Token 剩余约 ${left} 天`;
+        }
+
+        async function ensureToken() {
+            if (token && tokenExpire > Date.now() + 30_000) return;
+            // 尝试从缓存
+            if (loadTokenCache()) {
+                $('activeBase').textContent = activeBase;
+                setStatus('已登录', 'ok');
+                updateTokenInfo();
+                return;
+            }
+            await login();
+            if (!token) throw new Error('未登录');
+        }
+
+        async function api(path, opts = {}) {
+            await ensureToken();
+            const url = activeBase + path;
+            const r = await fetch(url, {
+                ...opts,
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json',
+                    ...(opts.headers || {}),
+                },
+            });
+            if (r.status === 401) {
+                token = ''; tokenExpire = 0;
+                localStorage.removeItem(TOKEN_KEY);
+                throw new Error('Token 失效,请重新登录');
+            }
+            const text = await r.text();
+            let j; try { j = text ? JSON.parse(text) : {}; } catch { j = { raw: text }; }
+            if (!r.ok || (j.code && j.code !== 200)) {
+                throw new Error(j.message || `${r.status} ${r.statusText}`);
+            }
+            return j;
+        }
+
+        // ====== 任务 ======
+        async function loadTasks() {
+            try {
+                const j = await api('/open/crons?searchValue=&t=' + Date.now());
+                allTasks = (j.data && (j.data.data || j.data)) || [];
+                if (!Array.isArray(allTasks) && Array.isArray(j.data)) allTasks = j.data;
+                renderTasks();
+            } catch (e) {
+                toast('加载任务失败: ' + e.message, 'error');
+            }
+        }
+
+        function taskStatusBadge(t) {
+            // status: 0=空闲, 1=运行中, 2=队列中, 3=禁用
+            // isDisabled: 1=禁用
+            if (t.isDisabled === 1) return '<span class="badge gray">已禁用</span>';
+            if (t.status === 0) return '<span class="badge green">空闲</span>';
+            if (t.status === 1) return '<span class="badge yellow">运行中</span>';
+            if (t.status === 2) return '<span class="badge yellow">排队中</span>';
+            return '<span class="badge gray">未知</span>';
+        }
+
+        function renderTasks() {
+            const kw = $('taskSearch').value.trim().toLowerCase();
+            const filtered = allTasks.filter(t => {
+                if (!kw) return true;
+                return (t.name || '').toLowerCase().includes(kw)
+                    || (t.command || '').toLowerCase().includes(kw)
+                    || (t.labels || []).join(',').toLowerCase().includes(kw);
+            });
+            const body = $('taskBody');
+            if (filtered.length === 0) {
+                body.innerHTML = `<tr><td colspan="6"><div class="empty-state">没有匹配的任务</div></td></tr>`;
+            } else {
+                body.innerHTML = filtered.map(t => {
+                    const id = t.id || t._id;
+                    return `
+                    <tr data-id="${id}">
+                      <td class="checkbox-cell"><input type="checkbox" class="task-check" value="${id}"></td>
+                      <td data-label="名称">
+                        <div style="font-weight:500">${escapeHtml(t.name || '(未命名)')}</div>
+                        <div class="text-sub">${escapeHtml((t.labels || []).join(' · '))}</div>
+                      </td>
+                      <td class="col-hide-sm" data-label="命令"><code class="ellipsis" title="${escapeAttr(t.command)}">${escapeHtml(t.command || '')}</code></td>
+                      <td class="col-hide-sm" data-label="定时"><code>${escapeHtml(t.schedule || '')}</code></td>
+                      <td data-label="状态">${taskStatusBadge(t)}</td>
+                      <td data-label="操作">
+                        <div class="row-actions">
+                          ${t.status === 1
+                            ? `<button class="btn small danger" onclick="stopTask('${id}', '${escapeJs(t.name)}')">停止</button>`
+                            : `<button class="btn small success" onclick="runTask('${id}', '${escapeJs(t.name)}')">运行</button>`}
+                          <button class="btn small ghost" onclick="viewLog('${id}', '${escapeJs(t.name)}')">日志</button>
+                          ${t.isDisabled === 1
+                            ? `<button class="btn small ghost" onclick="enableTask('${id}')">启用</button>`
+                            : `<button class="btn small ghost" onclick="disableTask('${id}')">禁用</button>`}
+                          <button class="btn small danger" onclick="deleteTask('${id}', '${escapeJs(t.name)}')">删除</button>
+                        </div>
+                      </td>
+                    </tr>`;
+                }).join('');
+            }
+            $('taskCount').textContent = `共 ${allTasks.length} 个任务, 当前显示 ${filtered.length} 个`;
+        }
+
+        async function runTask(id, name) {
+            try {
+                await api('/open/crons/run', { method: 'PUT', body: JSON.stringify([id]) });
+                toast(`已触发执行: ${name}`, 'success');
+                setTimeout(loadTasks, 1000);
+            } catch (e) { toast('执行失败: ' + e.message, 'error'); }
+        }
+
+        async function stopTask(id, name) {
+            try {
+                await api('/open/crons/stop', { method: 'PUT', body: JSON.stringify([id]) });
+                toast(`已停止: ${name}`, 'success');
+                setTimeout(loadTasks, 800);
+            } catch (e) { toast('停止失败: ' + e.message, 'error'); }
+        }
+
+        async function deleteTask(id, name) {
+            if (!confirm(`确认删除任务: ${name} ?`)) return;
+            try {
+                await api('/open/crons', { method: 'DELETE', body: JSON.stringify([id]) });
+                toast('已删除', 'success');
+                loadTasks();
+            } catch (e) { toast('删除失败: ' + e.message, 'error'); }
+        }
+
+        async function enableTask(id) {
+            try {
+                await api('/open/crons/enable', { method: 'PUT', body: JSON.stringify([id]) });
+                toast('已启用', 'success'); loadTasks();
+            } catch (e) { toast('启用失败: ' + e.message, 'error'); }
+        }
+
+        async function disableTask(id) {
+            try {
+                await api('/open/crons/disable', { method: 'PUT', body: JSON.stringify([id]) });
+                toast('已禁用', 'success'); loadTasks();
+            } catch (e) { toast('禁用失败: ' + e.message, 'error'); }
+        }
+
+        function getCheckedTaskIds() {
+            return Array.from(document.querySelectorAll('.task-check:checked')).map(c => c.value);
+        }
+
+        function toggleAllTasks(cb) {
+            document.querySelectorAll('.task-check').forEach(c => c.checked = cb.checked);
+        }
+
+        async function bulkRun() {
+            const ids = getCheckedTaskIds();
+            if (ids.length === 0) { toast('请勾选任务', 'warn'); return; }
+            if (!confirm(`确定批量执行 ${ids.length} 个任务?`)) return;
+            try {
+                await api('/open/crons/run', { method: 'PUT', body: JSON.stringify(ids) });
+                toast(`已触发 ${ids.length} 个任务`, 'success');
+                setTimeout(loadTasks, 1200);
+            } catch (e) { toast('批量执行失败: ' + e.message, 'error'); }
+        }
+
+        async function bulkDelete() {
+            const ids = getCheckedTaskIds();
+            if (ids.length === 0) { toast('请勾选任务', 'warn'); return; }
+            if (!confirm(`⚠️ 确定批量删除 ${ids.length} 个任务?此操作不可恢复!`)) return;
+            try {
+                await api('/open/crons', { method: 'DELETE', body: JSON.stringify(ids) });
+                toast('已删除', 'success'); loadTasks();
+            } catch (e) { toast('批量删除失败: ' + e.message, 'error'); }
+        }
+
+        // ====== 任务日志 ======
+        async function viewLog(id, name) {
+            currentLogId = id;
+            $('logTitle').textContent = `日志 - ${name}`;
+            $('logContent').textContent = '加载中...';
+            openModal('logModal');
+            await refreshLog();
+        }
+
+        async function refreshLog() {
+            if (!currentLogId) return;
+            try {
+                const j = await api(`/open/crons/${currentLogId}/log`);
+                const txt = (typeof j.data === 'string') ? j.data : JSON.stringify(j.data, null, 2);
+                $('logContent').textContent = txt || '(暂无日志)';
+                const box = $('logContent');
+                box.scrollTop = box.scrollHeight;
+            } catch (e) {
+                $('logContent').textContent = '加载失败: ' + e.message;
+            }
+        }
+
+        // ====== 环境变量 ======
+        async function loadEnvs() {
+            try {
+                const j = await api('/open/envs?searchValue=&t=' + Date.now());
+                allEnvs = (j.data && (j.data.data || j.data)) || [];
+                if (!Array.isArray(allEnvs) && Array.isArray(j.data)) allEnvs = j.data;
+                renderEnvs();
+            } catch (e) {
+                toast('加载环境变量失败: ' + e.message, 'error');
+            }
+        }
+
+        function maskValue(v) {
+            if (!v) return '';
+            if (v.length <= 6) return '••••';
+            return v.slice(0, 3) + '••••' + v.slice(-3);
+        }
+
+        function renderEnvs() {
+            const kw = $('envSearch').value.trim().toLowerCase();
+            const filtered = allEnvs.filter(e => {
+                if (!kw) return true;
+                return (e.name || '').toLowerCase().includes(kw)
+                    || (e.value || '').toLowerCase().includes(kw)
+                    || (e.remarks || '').toLowerCase().includes(kw);
+            });
+            const body = $('envBody');
+            if (filtered.length === 0) {
+                body.innerHTML = `<tr><td colspan="6"><div class="empty-state">没有匹配的环境变量</div></td></tr>`;
+            } else {
+                body.innerHTML = filtered.map(e => {
+                    const id = e.id || e._id;
+                    const disabled = e.status === 1; // 1=禁用 0=启用 (青龙 envs)
+                    return `
+                    <tr data-id="${id}">
+                      <td class="checkbox-cell"><input type="checkbox" class="env-check" value="${id}"></td>
+                      <td data-label="Key"><strong>${escapeHtml(e.name || '')}</strong></td>
+                      <td data-label="Value">
+                        <code class="ellipsis env-val" data-full="${escapeAttr(e.value)}" title="点击切换显示">${escapeHtml(maskValue(e.value))}</code>
+                      </td>
+                      <td class="col-hide-sm" data-label="备注">${escapeHtml(e.remarks || '')}</td>
+                      <td data-label="状态">${disabled ? '<span class="badge gray">已禁用</span>' : '<span class="badge green">启用</span>'}</td>
+                      <td data-label="操作">
+                        <div class="row-actions">
+                          <button class="btn small ghost" onclick='openEnvEditor(${JSON.stringify(id)})'>编辑</button>
+                          <button class="btn small ghost" onclick='toggleEnvOne(${JSON.stringify(id)}, ${disabled ? 1 : 0})'>
+                            ${disabled ? '启用' : '禁用'}
+                          </button>
+                          <button class="btn small danger" onclick='deleteEnv(${JSON.stringify(id)}, ${JSON.stringify(e.name)})'>删除</button>
+                        </div>
+                      </td>
+                    </tr>`;
+                }).join('');
+                // 点击 value 切换显示
+                document.querySelectorAll('.env-val').forEach(el => {
+                    el.addEventListener('click', () => {
+                        if (el.dataset.shown === '1') {
+                            el.textContent = maskValue(el.dataset.full);
+                            el.dataset.shown = '0';
+                        } else {
+                            el.textContent = el.dataset.full;
+                            el.dataset.shown = '1';
+                        }
+                    });
+                });
+            }
+            $('envCount').textContent = `共 ${allEnvs.length} 个环境变量, 当前显示 ${filtered.length} 个`;
+        }
+
+        function openEnvEditor(id) {
+            editingEnvId = id || null;
+            if (id) {
+                const e = allEnvs.find(x => (x.id || x._id) === id);
+                $('envModalTitle').textContent = `编辑环境变量: ${e.name}`;
+                $('envName').value = e.name || '';
+                $('envValue').value = e.value || '';
+                $('envRemarks').value = e.remarks || '';
+            } else {
+                $('envModalTitle').textContent = '新增环境变量';
+                $('envName').value = '';
+                $('envValue').value = '';
+                $('envRemarks').value = '';
+            }
+            openModal('envModal');
+        }
+
+        async function saveEnv() {
+            const name = $('envName').value.trim();
+            const value = $('envValue').value;
+            const remarks = $('envRemarks').value;
+            if (!name) { toast('Key 不能为空', 'error'); return; }
+            try {
+                if (editingEnvId) {
+                    await api('/open/envs', {
+                        method: 'PUT',
+                        body: JSON.stringify({ id: editingEnvId, name, value, remarks }),
+                    });
+                    toast('已保存', 'success');
+                } else {
+                    await api('/open/envs', {
+                        method: 'POST',
+                        body: JSON.stringify([{ name, value, remarks }]),
+                    });
+                    toast('已新增', 'success');
+                }
+                closeModal('envModal');
+                loadEnvs();
+            } catch (e) { toast('保存失败: ' + e.message, 'error'); }
+        }
+
+        async function deleteEnv(id, name) {
+            if (!confirm(`确认删除环境变量: ${name} ?`)) return;
+            try {
+                await api('/open/envs', { method: 'DELETE', body: JSON.stringify([id]) });
+                toast('已删除', 'success'); loadEnvs();
+            } catch (e) { toast('删除失败: ' + e.message, 'error'); }
+        }
+
+        async function toggleEnvOne(id, currentlyDisabled) {
+            const path = currentlyDisabled ? '/open/envs/enable' : '/open/envs/disable';
+            try {
+                await api(path, { method: 'PUT', body: JSON.stringify([id]) });
+                toast(currentlyDisabled ? '已启用' : '已禁用', 'success');
+                loadEnvs();
+            } catch (e) { toast('操作失败: ' + e.message, 'error'); }
+        }
+
+        function getCheckedEnvIds() {
+            return Array.from(document.querySelectorAll('.env-check:checked')).map(c => c.value);
+        }
+
+        function toggleAllEnvs(cb) {
+            document.querySelectorAll('.env-check').forEach(c => c.checked = cb.checked);
+        }
+
+        async function bulkDeleteEnv() {
+            const ids = getCheckedEnvIds();
+            if (ids.length === 0) { toast('请勾选环境变量', 'warn'); return; }
+            if (!confirm(`⚠️ 确定批量删除 ${ids.length} 个环境变量?`)) return;
+            try {
+                await api('/open/envs', { method: 'DELETE', body: JSON.stringify(ids) });
+                toast('已删除', 'success'); loadEnvs();
+            } catch (e) { toast('删除失败: ' + e.message, 'error'); }
+        }
+
+        async function bulkToggleEnv() {
+            const ids = getCheckedEnvIds();
+            if (ids.length === 0) { toast('请勾选环境变量', 'warn'); return; }
+            // 默认按当前 disabled 数量决定
+            const items = allEnvs.filter(e => ids.includes(String(e.id || e._id)) || ids.includes(e.id || e._id));
+            const disabledCount = items.filter(e => e.status === 1).length;
+            const toEnable = disabledCount >= items.length / 2;
+            const path = toEnable ? '/open/envs/enable' : '/open/envs/disable';
+            try {
+                await api(path, { method: 'PUT', body: JSON.stringify(ids) });
+                toast(toEnable ? '已批量启用' : '已批量禁用', 'success');
+                loadEnvs();
+            } catch (e) { toast('操作失败: ' + e.message, 'error'); }
+        }
+
+        // ====== WebDAV 同步 ======
+        function webdavOpts() {
+            const url = $('webdavUrl').value.trim().replace(/\/$/, '');
+            const user = $('webdavUser').value.trim();
+            const pass = $('webdavPass').value;
+            const path = $('webdavPath').value.trim() || '/qinglong-config.json';
+            if (!url || !user || !pass) throw new Error('请先填写 WebDAV URL / 用户名 / 密码');
+            const fullUrl = url + (path.startsWith('/') ? path : '/' + path);
+            const auth = 'Basic ' + btoa(unescape(encodeURIComponent(user + ':' + pass)));
+            return { url: fullUrl, auth };
+        }
+
+        async function uploadToWebdav() {
+            try {
+                saveLocalCreds();
+                saveWebdavCreds();
+                const { url, auth } = webdavOpts();
+                const payload = {
+                    primaryUrl: $('primaryUrl').value.trim(),
+                    fallbackUrl: $('fallbackUrl').value.trim(),
+                    clientId: $('clientId').value.trim(),
+                    clientSecret: $('clientSecret').value.trim(),
+                    updatedAt: new Date().toISOString(),
+                };
+                const r = await fetch(url, {
+                    method: 'PUT',
+                    headers: { 'Authorization': auth, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload, null, 2),
+                });
+                if (!r.ok && r.status !== 201 && r.status !== 204) {
+                    throw new Error(`HTTP ${r.status} ${r.statusText}`);
+                }
+                toast('已上传到 WebDAV', 'success');
+            } catch (e) {
+                toast('上传失败: ' + e.message, 'error');
+                console.error(e);
+            }
+        }
+
+        async function downloadFromWebdav() {
+            try {
+                saveWebdavCreds();
+                const { url, auth } = webdavOpts();
+                const r = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Authorization': auth },
+                    cache: 'no-store',
+                });
+                if (!r.ok) throw new Error(`HTTP ${r.status} ${r.statusText}`);
+                const j = await r.json();
+                if (j.primaryUrl) $('primaryUrl').value = j.primaryUrl;
+                if (j.fallbackUrl) $('fallbackUrl').value = j.fallbackUrl;
+                if (j.clientId) $('clientId').value = j.clientId;
+                if (j.clientSecret) $('clientSecret').value = j.clientSecret;
+                saveLocalCreds();
+                toast('已从 WebDAV 拉取并填入', 'success');
+            } catch (e) {
+                toast('拉取失败: ' + e.message, 'error');
+                console.error(e);
+            }
+        }
+
+        // ====== Escape ======
+        function escapeHtml(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function escapeAttr(s) { return escapeHtml(s); }
+        function escapeJs(s) { return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+        // ====== 启动 ======
+        (async function init() {
+            loadLocalCreds();
+            loadWebdavCreds();
+            $('configBox').classList.add('open');
+
+            // 本地没有 URL 但 WebDAV 凭证齐全时,自动尝试从 WebDAV 拉取
+            const hasUrls = $('primaryUrl').value.trim() || $('fallbackUrl').value.trim();
+            const hasWebdav = $('webdavUrl').value && $('webdavUser').value && $('webdavPass').value;
+            if (!hasUrls && hasWebdav) {
+                try {
+                    await downloadFromWebdav();
+                } catch (e) { /* 静默,允许用户手动填 */ }
+            }
+
+            if (loadTokenCache()) {
+                $('activeBase').textContent = activeBase;
+                setStatus('已登录 (缓存)', 'ok');
+                updateTokenInfo();
+                try {
+                    await loadTasks();
+                    setStatus('已登录', 'ok');
+                } catch (e) {
+                    setStatus('Token 已失效', '');
+                }
+            } else if ($('clientId').value && $('clientSecret').value && ($('primaryUrl').value || $('fallbackUrl').value)) {
+                login();
+            }
+        })();
+    </script>
+</body>
+
+</html>
