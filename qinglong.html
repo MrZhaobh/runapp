@@ -1232,22 +1232,22 @@
         // ====== 线路探测 ======
         // 用 no-cors 模式探活: 不关心响应内容,只要 fetch 没 reject 就说明服务器有响应,
         // 这样可以绕开 /api/* 跨域 CORS 拒绝带来的"假不可达",对 IPv4/IPv6/IPv6-only 都一致.
+        // 探测路径用 '/' 最保险 (任何活着的 HTTP 服务都会响应根路径,即便是 301/404 也算"通").
         async function reach(url) {
             const ctrl = new AbortController();
             const id = setTimeout(() => ctrl.abort(), 6000);
             const base = url.replace(/\/$/, '');
             try {
-                await fetch(base + '/api/system', {
+                await fetch(base + '/', {
                     signal: ctrl.signal,
                     cache: 'no-store',
                     mode: 'no-cors',
-                    redirect: 'manual',
                 });
                 clearTimeout(id);
-                return true;
+                return { ok: true };
             } catch (e) {
                 clearTimeout(id);
-                return false;
+                return { ok: false, err: (e && e.name ? e.name + ': ' : '') + (e && e.message || String(e)) };
             }
         }
 
@@ -1262,9 +1262,9 @@
         async function pickBase() {
             const { p, f, l } = getUrlTriple();
             // 局域网优先 (同网内最快),其次主链接,最后备用 CF
-            if (l && await reach(l)) return l;
-            if (p && await reach(p)) return p;
-            if (f && await reach(f)) return f;
+            if (l && (await reach(l)).ok) return l;
+            if (p && (await reach(p)).ok) return p;
+            if (f && (await reach(f)).ok) return f;
             throw new Error('主链接、备用链接、局域网链接均连接失败');
         }
 
@@ -1276,33 +1276,44 @@
         // 并发 ping 三个地址,更新各自的状态图标 (silent: 不弹 toast)
         async function pingAllAndShowStatus(silent = false) {
             const { p, f, l } = getUrlTriple();
-            const setIcon = (id, ok, url) => {
+            const setIcon = (id, result, url) => {
                 const el = $(id);
                 if (!url) { el.textContent = '—'; el.title = '未配置'; return; }
                 if (isBlockedByMixedContent(url)) {
                     el.textContent = '⚠️';
-                    el.title = 'HTTPS 页面无法访问 HTTP 地址 (mixed content)';
+                    el.title = 'HTTPS 页面无法访问 HTTP 地址 (mixed content) - 请用 HTTPS 部署青龙,或从 http 协议打开本页';
                     return;
                 }
-                el.textContent = ok ? '✅' : '❌';
-                el.title = ok ? '可达' : '不可达 (可能跨域被拦/服务器无响应/超时)';
+                if (result.ok) {
+                    el.textContent = '✅';
+                    el.title = '可达 (' + url + ')';
+                } else {
+                    el.textContent = '❌';
+                    el.title = `不可达: ${result.err || '未知错误'}\n探测地址: ${url}/\n常见原因: 跨域被拦/连接超时/IPv6不通/服务未启动`;
+                }
             };
             ['primaryStatus', 'fallbackStatus', 'lanStatus'].forEach(id => $(id).textContent = '⏳');
             const probe = (url) => {
-                if (!url) return Promise.resolve(false);
-                if (isBlockedByMixedContent(url)) return Promise.resolve(false);
+                if (!url) return Promise.resolve({ ok: false, err: 'no url' });
+                if (isBlockedByMixedContent(url)) return Promise.resolve({ ok: false, err: 'mixed-content blocked' });
                 return reach(url);
             };
-            const [pOk, fOk, lOk] = await Promise.all([probe(p), probe(f), probe(l)]);
-            setIcon('primaryStatus', pOk, p);
-            setIcon('fallbackStatus', fOk, f);
-            setIcon('lanStatus', lOk, l);
+            const [pR, fR, lR] = await Promise.all([probe(p), probe(f), probe(l)]);
+            setIcon('primaryStatus', pR, p);
+            setIcon('fallbackStatus', fR, f);
+            setIcon('lanStatus', lR, l);
             if (!silent) {
-                const fmt = (ok, url) => !url ? '—' : (isBlockedByMixedContent(url) ? '⚠️' : (ok ? '✅' : '❌'));
-                toast(`主:${fmt(pOk, p)}  备用:${fmt(fOk, f)}  局域网:${fmt(lOk, l)}`,
-                    (pOk || fOk || lOk) ? 'success' : 'error');
+                const fmt = (r, url) => !url ? '—' : (isBlockedByMixedContent(url) ? '⚠️' : (r.ok ? '✅' : '❌'));
+                let msg = `主:${fmt(pR, p)}  备用:${fmt(fR, f)}  局域网:${fmt(lR, l)}`;
+                // 报错时把每条线路的具体错误也带上,方便手机端复制排查
+                const errs = [];
+                if (p && !pR.ok && !isBlockedByMixedContent(p)) errs.push(`主(${p}): ${pR.err}`);
+                if (f && !fR.ok && !isBlockedByMixedContent(f)) errs.push(`备用(${f}): ${fR.err}`);
+                if (l && !lR.ok && !isBlockedByMixedContent(l)) errs.push(`局域网(${l}): ${lR.err}`);
+                if (errs.length) msg += '\n--- 详细 ---\n' + errs.join('\n');
+                toast(msg, (pR.ok || fR.ok || lR.ok) ? 'success' : 'error');
             }
-            return { pOk, fOk, lOk, p, f, l };
+            return { pOk: pR.ok, fOk: fR.ok, lOk: lR.ok, p, f, l };
         }
 
         async function testReachability() {
