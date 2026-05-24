@@ -1683,7 +1683,7 @@
         (async function init() {
             loadLocalCreds();
             loadGistCreds();
-            $('configBox').classList.add('open');
+            // 两个折叠面板默认都收起 (gistBox 本身就是收起的, configBox 这里不再展开)
 
             // 本地没有 URL 但有 token 时,自动从 Gist 拉取 (没有 Gist ID 也会自动搜索)
             const hasUrls = $('primaryUrl').value.trim() || $('fallbackUrl').value.trim();
