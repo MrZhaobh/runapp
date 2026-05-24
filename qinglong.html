@@ -424,6 +424,8 @@
             z-index: 100;
             max-width: 90vw;
             text-align: center;
+            line-height: 1.45;
+            word-break: break-word;
         }
 
         .toast.show {
@@ -1077,12 +1079,46 @@
         // ====== 工具函数 ======
         function $(id) { return document.getElementById(id); }
 
+        function copyToClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                return navigator.clipboard.writeText(text).then(() => true).catch(() => false);
+            }
+            // 非安全上下文 (http) 走 fallback
+            return new Promise(resolve => {
+                try {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.left = '-9999px';
+                    ta.setAttribute('readonly', '');
+                    document.body.appendChild(ta);
+                    ta.select();
+                    const ok = document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    resolve(ok);
+                } catch { resolve(false); }
+            });
+        }
+
         function toast(msg, type = '') {
             const t = $('toast');
-            t.textContent = msg;
+            const isErr = (type === 'error' || type === 'warn');
             t.className = 'toast show ' + type;
             clearTimeout(toast._t);
-            toast._t = setTimeout(() => t.classList.remove('show'), 2400);
+            // 错误/警告信息通常更长,手机端需要更久阅读时间
+            const dur = isErr
+                ? Math.min(8000, Math.max(4000, msg.length * 80))
+                : 2400;
+            // 错误信息自动复制到剪贴板,方便手机端排查
+            if (isErr) {
+                copyToClipboard(msg).then(ok => {
+                    t.textContent = ok ? (msg + ' (已复制)') : msg;
+                });
+                t.textContent = msg; // 先把内容显示出来,不等剪贴板回调
+            } else {
+                t.textContent = msg;
+            }
+            toast._t = setTimeout(() => t.classList.remove('show'), dur);
         }
 
         function toggleCollapsible(id) {
@@ -1276,7 +1312,19 @@
             const text = await r.text();
             let j; try { j = text ? JSON.parse(text) : {}; } catch { j = { raw: text }; }
             if (!r.ok || (j.code && j.code !== 200)) {
-                throw new Error(j.message || `${r.status} ${r.statusText}`);
+                let msg = j.message || `${r.status} ${r.statusText}`;
+                // celebrate/Joi 校验失败时,把具体哪个字段/哪条规则不通过追加上
+                if (j.validation && typeof j.validation === 'object') {
+                    const parts = [];
+                    for (const src of Object.keys(j.validation)) {
+                        const v = j.validation[src] || {};
+                        const keys = Array.isArray(v.keys) ? v.keys.join(',') : '';
+                        const detail = v.message || '';
+                        parts.push(`[${src}${keys ? ' ' + keys : ''}] ${detail}`.trim());
+                    }
+                    if (parts.length) msg += ' — ' + parts.join('; ');
+                }
+                throw new Error(msg);
             }
             return j;
         }
