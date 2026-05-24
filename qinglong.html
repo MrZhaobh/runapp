@@ -977,7 +977,8 @@
                 </div>
                 <div class="form-group" style="margin-top:12px">
                     <label>Value (变量值)</label>
-                    <textarea id="envValue"></textarea>
+                    <textarea id="envValue" oninput="updateEnvValueHint()"></textarea>
+                    <span class="text-sub" id="envValueHint" style="margin-top:4px"></span>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1438,9 +1439,19 @@
                     el.addEventListener('click', () => {
                         if (el.dataset.shown === '1') {
                             el.textContent = maskValue(el.dataset.full);
+                            el.style.whiteSpace = '';
                             el.dataset.shown = '0';
                         } else {
-                            el.textContent = el.dataset.full;
+                            // 值里含逗号则拆成多行展示(只是 UI 展示, 不修改原值)
+                            const full = el.dataset.full || '';
+                            if (full.includes(',')) {
+                                const parts = full.split(',').map(s => s.trim()).filter(Boolean);
+                                el.textContent = parts.map((p, i) => `[${i + 1}] ${p}`).join('\n');
+                                el.style.whiteSpace = 'pre-wrap';
+                            } else {
+                                el.textContent = full;
+                                el.style.whiteSpace = '';
+                            }
                             el.dataset.shown = '1';
                         }
                     });
@@ -1449,26 +1460,62 @@
             $('envCount').textContent = `共 ${allEnvs.length} 个环境变量, 当前显示 ${filtered.length} 个`;
         }
 
+        // ====== 多值环境变量(逗号分隔)处理 ======
+        function splitCsvForEdit(v) {
+            if (!v) return '';
+            // 值里含逗号才拆;不含逗号就原样返回
+            if (!v.includes(',')) return v;
+            return v.split(',').map(s => s.trim()).filter(s => s.length > 0).join('\n');
+        }
+
+        function joinCsvForSave(v) {
+            if (!v) return '';
+            // 用户输入了换行就按行拼回去,用逗号连接
+            if (!v.includes('\n')) return v.trim();
+            return v.split(/\r?\n/).map(s => s.trim()).filter(s => s.length > 0).join(',');
+        }
+
+        function updateEnvValueHint() {
+            const v = $('envValue').value;
+            if (!v) {
+                $('envValueHint').textContent = '多个值可换行输入,保存时会自动用逗号连接';
+                return;
+            }
+            // 预览保存后的样子
+            const joined = joinCsvForSave(v);
+            const itemCount = joined ? joined.split(',').filter(s => s.length > 0).length : 0;
+            if (itemCount > 1) {
+                $('envValueHint').textContent = `将以 ${itemCount} 项 (逗号连接) 保存到青龙`;
+            } else {
+                $('envValueHint').textContent = '当前为单个值';
+            }
+        }
+
         function openEnvEditor(id) {
             editingEnvId = id || null;
             if (id) {
                 const e = allEnvs.find(x => (x.id || x._id) === id);
                 $('envModalTitle').textContent = `编辑环境变量: ${e.name}`;
                 $('envName').value = e.name || '';
-                $('envValue').value = e.value || '';
+                $('envValue').value = splitCsvForEdit(e.value || '');
                 $('envRemarks').value = e.remarks || '';
+                const lines = ($('envValue').value.match(/\n/g) || []).length + ($('envValue').value ? 1 : 0);
+                $('envValueHint').textContent = lines > 1
+                    ? `检测到 ${lines} 项 (按逗号拆分), 保存时会自动用逗号合并`
+                    : '多个值可换行输入,保存时会自动用逗号连接';
             } else {
                 $('envModalTitle').textContent = '新增环境变量';
                 $('envName').value = '';
                 $('envValue').value = '';
                 $('envRemarks').value = '';
+                $('envValueHint').textContent = '多个值可换行输入,保存时会自动用逗号连接';
             }
             openModal('envModal');
         }
 
         async function saveEnv() {
             const name = $('envName').value.trim();
-            const value = $('envValue').value;
+            const value = joinCsvForSave($('envValue').value);
             const remarks = $('envRemarks').value;
             if (!name) { toast('Key 不能为空', 'error'); return; }
             try {
