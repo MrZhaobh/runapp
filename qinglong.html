@@ -1313,6 +1313,7 @@
             let j; try { j = text ? JSON.parse(text) : {}; } catch { j = { raw: text }; }
             if (!r.ok || (j.code && j.code !== 200)) {
                 let msg = j.message || `${r.status} ${r.statusText}`;
+                let appended = false;
                 // celebrate/Joi 校验失败时,把具体哪个字段/哪条规则不通过追加上
                 if (j.validation && typeof j.validation === 'object') {
                     const parts = [];
@@ -1322,7 +1323,20 @@
                         const detail = v.message || '';
                         parts.push(`[${src}${keys ? ' ' + keys : ''}] ${detail}`.trim());
                     }
-                    if (parts.length) msg += ' — ' + parts.join('; ');
+                    if (parts.length) { msg += ' — ' + parts.join('; '); appended = true; }
+                }
+                // 兜底: 没拿到 validation 字段就把整个响应 + 状态码 + 请求体一起塞进错误信息,
+                // 方便手机端直接复制排查 (尤其是 celebrate / 400 类错误)
+                if (!appended) {
+                    let bodyPreview = '';
+                    try {
+                        const ob = opts.body;
+                        if (typeof ob === 'string') bodyPreview = ob.slice(0, 300);
+                    } catch { /* ignore */ }
+                    const respPreview = (text || '').slice(0, 500);
+                    msg += ` | status=${r.status} ${opts.method || 'GET'} ${path}`;
+                    if (bodyPreview) msg += ` | req=${bodyPreview}`;
+                    if (respPreview) msg += ` | resp=${respPreview}`;
                 }
                 throw new Error(msg);
             }
