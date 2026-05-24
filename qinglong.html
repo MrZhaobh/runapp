@@ -784,11 +784,11 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label>主链接</label>
-                            <input type="url" id="primaryUrl" placeholder="从 WebDAV 拉取或手动填入">
+                            <input type="url" id="primaryUrl" placeholder="从 Gist 拉取或手动填入">
                         </div>
                         <div class="form-group">
                             <label>备用链接 (CF 代理)</label>
-                            <input type="url" id="fallbackUrl" placeholder="从 WebDAV 拉取或手动填入">
+                            <input type="url" id="fallbackUrl" placeholder="从 Gist 拉取或手动填入">
                         </div>
                         <div class="form-group">
                             <label>Client ID</label>
@@ -811,37 +811,34 @@
                 </div>
             </div>
 
-            <div class="collapsible" id="webdavBox">
-                <div class="collapsible-header" onclick="toggleCollapsible('webdavBox')">
-                    <strong>WebDAV 同步 (坚果云)</strong>
+            <div class="collapsible" id="gistBox">
+                <div class="collapsible-header" onclick="toggleCollapsible('gistBox')">
+                    <strong>GitHub Gist 同步 (私有)</strong>
                     <span class="arrow">▶</span>
                 </div>
                 <div class="collapsible-body">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>WebDAV URL</label>
-                            <input type="url" id="webdavUrl" placeholder="https://dav.jianguoyun.com/dav/">
+                            <label>GitHub Personal Access Token</label>
+                            <input type="password" id="gistToken" autocomplete="off" placeholder="ghp_... 需要 gist 权限">
                         </div>
                         <div class="form-group">
-                            <label>用户名 (账号邮箱)</label>
-                            <input type="text" id="webdavUser" autocomplete="off">
+                            <label>Gist ID (留空则首次上传自动创建)</label>
+                            <input type="text" id="gistId" autocomplete="off" placeholder="例如 abc123def456...">
                         </div>
                         <div class="form-group">
-                            <label>密码 (应用密码)</label>
-                            <input type="password" id="webdavPass" autocomplete="off">
-                        </div>
-                        <div class="form-group">
-                            <label>同步文件路径</label>
-                            <input type="text" id="webdavPath" value="/qinglong-config.json">
+                            <label>文件名</label>
+                            <input type="text" id="gistFilename" value="qinglong-config.json">
                         </div>
                     </div>
                     <p class="text-sub" style="margin-top:8px">
-                        坚果云需要在「账户信息 → 安全选项 → 第三方应用授权」里创建应用密码。提交的 JSON 仅包含青龙的 URL / Client ID / Client Secret。
+                        在 <a href="https://github.com/settings/tokens?type=beta" target="_blank" style="color:var(--primary-color)">github.com/settings/tokens</a> 创建一个 <strong>fine-grained token</strong>,Account permissions → Gists 选 <strong>Read and write</strong>;或者用 classic token 勾选 <strong>gist</strong> scope。Gist 会自动创建为 <strong>secret</strong>(只有持有链接的人可见)。
                     </p>
                     <div class="btn-row">
-                        <button class="btn success" onclick="uploadToWebdav()">⬆️ 上传到 WebDAV</button>
-                        <button class="btn" onclick="downloadFromWebdav()">⬇️ 从 WebDAV 拉取</button>
-                        <button class="btn ghost" onclick="saveWebdavCreds()">保存 WebDAV 凭证到本地</button>
+                        <button class="btn success" onclick="uploadToGist()">⬆️ 上传到 Gist</button>
+                        <button class="btn" onclick="downloadFromGist()">⬇️ 从 Gist 拉取</button>
+                        <button class="btn ghost" onclick="saveGistCreds()">保存 Gist 凭证到本地</button>
+                        <button class="btn ghost" onclick="openGistInBrowser()">🔗 打开 Gist</button>
                     </div>
                 </div>
             </div>
@@ -964,7 +961,7 @@
     <script>
         // ====== 状态 ======
         const STORE_KEY = 'qinglong_config_v1';
-        const WEBDAV_KEY = 'qinglong_webdav_v1';
+        const GIST_KEY = 'qinglong_gist_v1';
         const TOKEN_KEY = 'qinglong_token_v1';
         let activeBase = '';
         let token = '';
@@ -1040,24 +1037,22 @@
             toast('已清空', 'success');
         }
 
-        function saveWebdavCreds() {
+        function saveGistCreds() {
             const data = {
-                url: $('webdavUrl').value.trim(),
-                user: $('webdavUser').value.trim(),
-                pass: $('webdavPass').value,
-                path: $('webdavPath').value.trim() || '/qinglong-config.json',
+                token: $('gistToken').value.trim(),
+                gistId: $('gistId').value.trim(),
+                filename: $('gistFilename').value.trim() || 'qinglong-config.json',
             };
-            localStorage.setItem(WEBDAV_KEY, JSON.stringify(data));
-            toast('WebDAV 凭证已保存到浏览器', 'success');
+            localStorage.setItem(GIST_KEY, JSON.stringify(data));
+            toast('Gist 凭证已保存到浏览器', 'success');
         }
 
-        function loadWebdavCreds() {
+        function loadGistCreds() {
             try {
-                const data = JSON.parse(localStorage.getItem(WEBDAV_KEY) || '{}');
-                if (data.url) $('webdavUrl').value = data.url;
-                if (data.user) $('webdavUser').value = data.user;
-                if (data.pass) $('webdavPass').value = data.pass;
-                if (data.path) $('webdavPath').value = data.path;
+                const data = JSON.parse(localStorage.getItem(GIST_KEY) || '{}');
+                if (data.token) $('gistToken').value = data.token;
+                if (data.gistId) $('gistId').value = data.gistId;
+                if (data.filename) $('gistFilename').value = data.filename;
             } catch (e) { }
         }
 
@@ -1497,23 +1492,29 @@
             } catch (e) { toast('操作失败: ' + e.message, 'error'); }
         }
 
-        // ====== WebDAV 同步 ======
-        function webdavOpts() {
-            const url = $('webdavUrl').value.trim().replace(/\/$/, '');
-            const user = $('webdavUser').value.trim();
-            const pass = $('webdavPass').value;
-            const path = $('webdavPath').value.trim() || '/qinglong-config.json';
-            if (!url || !user || !pass) throw new Error('请先填写 WebDAV URL / 用户名 / 密码');
-            const fullUrl = url + (path.startsWith('/') ? path : '/' + path);
-            const auth = 'Basic ' + btoa(unescape(encodeURIComponent(user + ':' + pass)));
-            return { url: fullUrl, auth };
+        // ====== GitHub Gist 同步 ======
+        function gistOpts() {
+            const token = $('gistToken').value.trim();
+            const gistId = $('gistId').value.trim();
+            const filename = $('gistFilename').value.trim() || 'qinglong-config.json';
+            if (!token) throw new Error('请先填写 GitHub Personal Access Token');
+            return { token, gistId, filename };
         }
 
-        async function uploadToWebdav() {
+        function gistHeaders(token) {
+            return {
+                'Authorization': 'Bearer ' + token,
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28',
+                'Content-Type': 'application/json',
+            };
+        }
+
+        async function uploadToGist() {
             try {
                 saveLocalCreds();
-                saveWebdavCreds();
-                const { url, auth } = webdavOpts();
+                saveGistCreds();
+                const { token, gistId, filename } = gistOpts();
                 const payload = {
                     primaryUrl: $('primaryUrl').value.trim(),
                     fallbackUrl: $('fallbackUrl').value.trim(),
@@ -1521,42 +1522,81 @@
                     clientSecret: $('clientSecret').value.trim(),
                     updatedAt: new Date().toISOString(),
                 };
-                const r = await fetch(url, {
-                    method: 'PUT',
-                    headers: { 'Authorization': auth, 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload, null, 2),
-                });
-                if (!r.ok && r.status !== 201 && r.status !== 204) {
-                    throw new Error(`HTTP ${r.status} ${r.statusText}`);
+                const body = {
+                    description: 'Qinglong panel config (auto sync)',
+                    files: { [filename]: { content: JSON.stringify(payload, null, 2) } },
+                };
+                let url, method;
+                if (gistId) {
+                    url = `https://api.github.com/gists/${gistId}`;
+                    method = 'PATCH';
+                } else {
+                    url = 'https://api.github.com/gists';
+                    method = 'POST';
+                    body.public = false;
                 }
-                toast('已上传到 WebDAV', 'success');
+                const r = await fetch(url, {
+                    method,
+                    headers: gistHeaders(token),
+                    body: JSON.stringify(body),
+                });
+                if (!r.ok) {
+                    const txt = await r.text();
+                    throw new Error(`HTTP ${r.status}: ${txt.slice(0, 200)}`);
+                }
+                const j = await r.json();
+                if (!gistId && j.id) {
+                    $('gistId').value = j.id;
+                    saveGistCreds();
+                    toast('已创建私有 Gist (ID 已自动填入)', 'success');
+                } else {
+                    toast('已上传到 Gist', 'success');
+                }
             } catch (e) {
                 toast('上传失败: ' + e.message, 'error');
                 console.error(e);
             }
         }
 
-        async function downloadFromWebdav() {
+        async function downloadFromGist() {
             try {
-                saveWebdavCreds();
-                const { url, auth } = webdavOpts();
-                const r = await fetch(url, {
+                saveGistCreds();
+                const { token, gistId, filename } = gistOpts();
+                if (!gistId) throw new Error('请先填写 Gist ID,或先上传一次自动创建');
+                const r = await fetch(`https://api.github.com/gists/${gistId}`, {
                     method: 'GET',
-                    headers: { 'Authorization': auth },
+                    headers: gistHeaders(token),
                     cache: 'no-store',
                 });
-                if (!r.ok) throw new Error(`HTTP ${r.status} ${r.statusText}`);
-                const j = await r.json();
+                if (!r.ok) {
+                    const txt = await r.text();
+                    throw new Error(`HTTP ${r.status}: ${txt.slice(0, 200)}`);
+                }
+                const g = await r.json();
+                const file = g.files && (g.files[filename] || g.files[Object.keys(g.files)[0]]);
+                if (!file) throw new Error(`Gist 里没有文件 ${filename}`);
+                let content = file.content;
+                if (file.truncated && file.raw_url) {
+                    const raw = await fetch(file.raw_url, { headers: { 'Authorization': 'Bearer ' + token } });
+                    content = await raw.text();
+                }
+                const j = JSON.parse(content);
                 if (j.primaryUrl) $('primaryUrl').value = j.primaryUrl;
                 if (j.fallbackUrl) $('fallbackUrl').value = j.fallbackUrl;
                 if (j.clientId) $('clientId').value = j.clientId;
                 if (j.clientSecret) $('clientSecret').value = j.clientSecret;
                 saveLocalCreds();
-                toast('已从 WebDAV 拉取并填入', 'success');
+                toast('已从 Gist 拉取并填入', 'success');
             } catch (e) {
                 toast('拉取失败: ' + e.message, 'error');
                 console.error(e);
             }
+        }
+
+        function openGistInBrowser() {
+            const gistId = $('gistId').value.trim();
+            if (!gistId) { toast('Gist ID 为空', 'warn'); return; }
+            window.open(`https://gist.github.com/${gistId}`, '_blank');
         }
 
         // ====== Escape ======
@@ -1571,15 +1611,15 @@
         // ====== 启动 ======
         (async function init() {
             loadLocalCreds();
-            loadWebdavCreds();
+            loadGistCreds();
             $('configBox').classList.add('open');
 
-            // 本地没有 URL 但 WebDAV 凭证齐全时,自动尝试从 WebDAV 拉取
+            // 本地没有 URL 但 Gist 凭证齐全时,自动尝试从 Gist 拉取
             const hasUrls = $('primaryUrl').value.trim() || $('fallbackUrl').value.trim();
-            const hasWebdav = $('webdavUrl').value && $('webdavUser').value && $('webdavPass').value;
-            if (!hasUrls && hasWebdav) {
+            const hasGist = $('gistToken').value && $('gistId').value;
+            if (!hasUrls && hasGist) {
                 try {
-                    await downloadFromWebdav();
+                    await downloadFromGist();
                 } catch (e) { /* 静默,允许用户手动填 */ }
             }
 
