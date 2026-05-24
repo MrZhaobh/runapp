@@ -1300,20 +1300,21 @@
         let cachedSystemInfo = null;
         async function fetchSystemInfoOnce() {
             if (cachedSystemInfo !== null) return cachedSystemInfo;
-            // 几个可能的版本接口,逐个试,谁先成功用谁
-            const paths = ['/api/system', '/open/system', '/api/user'];
+            // 几个可能的版本接口,逐个试,把所有结果都记录下来
+            const paths = ['/api/system', '/open/system', '/api/user', '/open/version'];
+            const attempts = [];
             for (const p of paths) {
                 try {
                     const r = await fetch(activeBase + p, {
                         headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
                     });
-                    if (!r.ok) continue;
                     const t = await r.text();
-                    cachedSystemInfo = { path: p, body: t.slice(0, 400) };
-                    return cachedSystemInfo;
-                } catch { /* try next */ }
+                    attempts.push(`${p}->${r.status}:${(t || '').slice(0, 200)}`);
+                } catch (e) {
+                    attempts.push(`${p}->ERR:${e.message}`);
+                }
             }
-            cachedSystemInfo = { path: '(all failed)', body: '' };
+            cachedSystemInfo = { body: attempts.join(' || ') };
             return cachedSystemInfo;
         }
 
@@ -1362,7 +1363,7 @@
                 msg += `\nStatus: ${r.status} ${r.statusText}`;
                 if (bodyPreview) msg += `\nRequest: ${bodyPreview}`;
                 if (respPreview) msg += `\nResponse: ${respPreview}`;
-                if (sys && sys.body) msg += `\nSystem(${sys.path}): ${sys.body}`;
+                msg += `\nSystem: ${(sys && sys.body) || '(unavailable)'}`;
                 throw new Error(msg);
             }
             return j;
