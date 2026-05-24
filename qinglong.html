@@ -1296,6 +1296,27 @@
             if (!token) throw new Error('未登录');
         }
 
+        // 缓存的青龙系统信息 (报错时拉一次,避免重复请求)
+        let cachedSystemInfo = null;
+        async function fetchSystemInfoOnce() {
+            if (cachedSystemInfo !== null) return cachedSystemInfo;
+            // 几个可能的版本接口,逐个试,谁先成功用谁
+            const paths = ['/api/system', '/open/system', '/api/user'];
+            for (const p of paths) {
+                try {
+                    const r = await fetch(activeBase + p, {
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+                    });
+                    if (!r.ok) continue;
+                    const t = await r.text();
+                    cachedSystemInfo = { path: p, body: t.slice(0, 400) };
+                    return cachedSystemInfo;
+                } catch { /* try next */ }
+            }
+            cachedSystemInfo = { path: '(all failed)', body: '' };
+            return cachedSystemInfo;
+        }
+
         async function api(path, opts = {}) {
             await ensureToken();
             const url = activeBase + path;
@@ -1334,11 +1355,14 @@
                     if (typeof ob === 'string') bodyPreview = ob.slice(0, 500);
                 } catch { /* ignore */ }
                 const respPreview = (text || '').slice(0, 800);
+                // 顺手拉一下青龙版本信息 (只拉一次,缓存)
+                const sys = await fetchSystemInfoOnce();
                 msg += `\n--- 调试信息 ---`;
                 msg += `\nAPI: ${opts.method || 'GET'} ${path}`;
                 msg += `\nStatus: ${r.status} ${r.statusText}`;
                 if (bodyPreview) msg += `\nRequest: ${bodyPreview}`;
                 if (respPreview) msg += `\nResponse: ${respPreview}`;
+                if (sys && sys.body) msg += `\nSystem(${sys.path}): ${sys.body}`;
                 throw new Error(msg);
             }
             return j;
