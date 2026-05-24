@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>青龙面板管理器</title>
     <style>
         :root {
@@ -39,6 +39,10 @@
             width: 100%;
             max-width: 1100px;
             margin: 0 auto;
+            /* 避开刘海/打孔屏的状态栏遮挡 (APP/全面屏需要), 桌面浏览器 env() 为 0 不影响 */
+            padding-top: env(safe-area-inset-top, 0);
+            padding-left: env(safe-area-inset-left, 0);
+            padding-right: env(safe-area-inset-right, 0);
         }
 
         .card {
@@ -1269,7 +1273,10 @@
         }
 
         // 当前页面是 https 但目标 URL 是 http -> 浏览器 mixed-content 拦截,根本发不出请求
+        // Tauri WebView (QingLong Shell APP) 通过 setMixedContentMode(ALWAYS_ALLOW) 关掉了这个限制,
+        // 此时即使页面是 HTTPS 也能正常 fetch HTTP,所以跳过这个预检
         function isBlockedByMixedContent(url) {
+            if (window.__TAURI__ || window.__TAURI_INTERNALS__) return false;
             return location.protocol === 'https:' && /^http:\/\//i.test(url);
         }
 
