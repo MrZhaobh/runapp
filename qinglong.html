@@ -594,7 +594,14 @@
             .toolbar>div {
                 width: 100%;
                 display: grid !important;
-                grid-template-columns: repeat(3, 1fr);
+                grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
+                gap: 6px;
+            }
+
+            .toolbar>div .btn {
+                padding: 9px 4px;
+                font-size: 13px;
+                min-height: 38px;
             }
 
             .search-input {
@@ -637,13 +644,15 @@
 
             td {
                 border: none;
-                padding: 4px 0;
+                padding: 5px 0;
                 font-size: 13px;
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
                 gap: 10px;
                 min-height: 0;
+                min-width: 0;
+                overflow: hidden;
             }
 
             td::before {
@@ -653,20 +662,33 @@
                 font-size: 11px;
                 text-transform: uppercase;
                 letter-spacing: .04em;
-                flex: 0 0 64px;
+                flex: 0 0 56px;
                 padding-top: 2px;
+                white-space: nowrap;
             }
 
             td:not([data-label])::before {
                 content: none;
             }
 
+            /* 卡片中 紧邻 checkbox 的第一行 (名称/Key) 留出右侧空间避免被遮挡 */
+            tbody tr>td:nth-child(2) {
+                padding-right: 36px;
+            }
+
+            tbody tr>td:nth-child(2)>* {
+                min-width: 0;
+                word-break: break-all;
+            }
+
             td.checkbox-cell {
                 position: absolute;
-                top: 10px;
+                top: 12px;
                 right: 10px;
                 width: auto;
                 padding: 0;
+                margin: 0;
+                z-index: 1;
             }
 
             td.checkbox-cell::before {
@@ -674,8 +696,9 @@
             }
 
             td.checkbox-cell input {
-                width: 20px;
-                height: 20px;
+                width: 22px;
+                height: 22px;
+                cursor: pointer;
             }
 
             .ellipsis {
@@ -684,25 +707,32 @@
                 word-break: break-all;
                 text-align: right;
                 flex: 1;
+                min-width: 0;
             }
 
+            /* 行内操作按钮: 自适应等宽 grid, 不会出现单按钮独占一整行的情况 */
             .row-actions {
                 width: 100%;
                 gap: 6px;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
             }
 
             .row-actions .btn {
-                flex: 1 1 calc(33.33% - 6px);
+                flex: unset;
                 padding: 8px 4px;
                 font-size: 12px;
                 min-height: 36px;
+                width: 100%;
+                min-width: 0;
             }
 
             td[data-label="操作"] {
                 display: block;
                 margin-top: 8px;
-                padding-top: 8px;
+                padding-top: 10px;
                 border-top: 1px dashed var(--border-color);
+                overflow: visible;
             }
 
             td[data-label="操作"]::before {
