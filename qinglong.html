@@ -498,6 +498,73 @@
             flex-wrap: wrap;
         }
 
+        /* 多值环境变量编辑器 */
+        .value-editor {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .value-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .value-item .value-index {
+            flex: 0 0 26px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-sub);
+            background: #f3f4f6;
+            border-radius: 6px;
+            padding: 6px 0;
+            user-select: none;
+        }
+
+        .value-item input.value-input {
+            flex: 1;
+            font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+            font-size: 13px;
+        }
+
+        .value-item .value-remove {
+            flex: 0 0 32px;
+            padding: 6px;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        /* 列表里展开 value 时的多项展示 */
+        .value-chips {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            text-align: left;
+            width: 100%;
+        }
+
+        .value-chip {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            font-size: 12px;
+            font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+            padding: 4px 8px;
+            background: #f9fafb;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            word-break: break-all;
+        }
+
+        .value-chip .chip-idx {
+            flex: 0 0 22px;
+            text-align: center;
+            color: var(--text-sub);
+            font-size: 11px;
+            font-weight: 500;
+        }
+
         .endpoint-row {
             display: flex;
             align-items: center;
@@ -976,9 +1043,13 @@
                     </div>
                 </div>
                 <div class="form-group" style="margin-top:12px">
-                    <label>Value (变量值)</label>
-                    <textarea id="envValue" oninput="updateEnvValueHint()"></textarea>
-                    <span class="text-sub" id="envValueHint" style="margin-top:4px"></span>
+                    <label>Value (变量值) <span class="text-sub" style="font-weight:normal">多个值会自动用逗号连接后保存</span></label>
+                    <div id="envValueEditor" class="value-editor"></div>
+                    <div style="margin-top:6px;display:flex;gap:6px;align-items:center">
+                        <button type="button" class="btn ghost small" onclick="addValueItem()">+ 添加一项</button>
+                        <button type="button" class="btn ghost small" onclick="pasteCsvToEditor()" title="把剪贴板里的逗号分隔字符串一次性拆开导入">📋 粘贴拆分</button>
+                        <span class="text-sub" id="envValueHint" style="margin-left:auto"></span>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1419,7 +1490,11 @@
                       <td class="checkbox-cell"><input type="checkbox" class="env-check" value="${id}"></td>
                       <td data-label="Key"><strong>${escapeHtml(e.name || '')}</strong></td>
                       <td data-label="Value">
-                        <code class="ellipsis env-val" data-full="${escapeAttr(e.value)}" title="点击切换显示">${escapeHtml(maskValue(e.value))}</code>
+                        ${(() => {
+                            const parts = (e.value || '').split(',').map(s => s.trim()).filter(Boolean);
+                            const badge = parts.length > 1 ? `<span class="badge gray" style="margin-right:6px">${parts.length} 项</span>` : '';
+                            return `${badge}<code class="ellipsis env-val" data-full="${escapeAttr(e.value)}" title="点击切换显示">${escapeHtml(maskValue(e.value))}</code>`;
+                        })()}
                       </td>
                       <td class="col-hide-sm" data-label="备注">${escapeHtml(e.remarks || '')}</td>
                       <td data-label="状态">${disabled ? '<span class="badge gray">已禁用</span>' : '<span class="badge green">启用</span>'}</td>
@@ -1434,7 +1509,7 @@
                       </td>
                     </tr>`;
                 }).join('');
-                // 点击 value 切换显示
+                // 点击 value 切换显示 (含逗号则按项展示为 chip 列表)
                 document.querySelectorAll('.env-val').forEach(el => {
                     el.addEventListener('click', () => {
                         if (el.dataset.shown === '1') {
@@ -1442,15 +1517,12 @@
                             el.style.whiteSpace = '';
                             el.dataset.shown = '0';
                         } else {
-                            // 值里含逗号则拆成多行展示(只是 UI 展示, 不修改原值)
                             const full = el.dataset.full || '';
-                            if (full.includes(',')) {
-                                const parts = full.split(',').map(s => s.trim()).filter(Boolean);
-                                el.textContent = parts.map((p, i) => `[${i + 1}] ${p}`).join('\n');
-                                el.style.whiteSpace = 'pre-wrap';
+                            const parts = full.split(',').map(s => s.trim()).filter(Boolean);
+                            if (parts.length > 1) {
+                                el.innerHTML = `<div class="value-chips">${parts.map((p, i) => `<div class="value-chip"><span class="chip-idx">${i + 1}</span><span>${escapeHtml(p)}</span></div>`).join('')}</div>`;
                             } else {
                                 el.textContent = full;
-                                el.style.whiteSpace = '';
                             }
                             el.dataset.shown = '1';
                         }
@@ -1461,33 +1533,93 @@
         }
 
         // ====== 多值环境变量(逗号分隔)处理 ======
-        function splitCsvForEdit(v) {
-            if (!v) return '';
-            // 值里含逗号才拆;不含逗号就原样返回
-            if (!v.includes(',')) return v;
-            return v.split(',').map(s => s.trim()).filter(s => s.length > 0).join('\n');
+        function splitEnvValue(v) {
+            if (!v) return [''];
+            // 整体含逗号才拆;否则当作单值
+            if (!v.includes(',')) return [v];
+            return v.split(',').map(s => s.trim()).filter(s => s.length > 0);
         }
 
-        function joinCsvForSave(v) {
-            if (!v) return '';
-            // 用户输入了换行就按行拼回去,用逗号连接
-            if (!v.includes('\n')) return v.trim();
-            return v.split(/\r?\n/).map(s => s.trim()).filter(s => s.length > 0).join(',');
+        function collectEnvValueFromEditor() {
+            const inputs = document.querySelectorAll('#envValueEditor .value-input');
+            const arr = Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
+            return arr.join(',');
+        }
+
+        function refreshValueIndices() {
+            document.querySelectorAll('#envValueEditor .value-item').forEach((row, i) => {
+                row.querySelector('.value-index').textContent = i + 1;
+            });
+        }
+
+        function attachItemHandlers(row) {
+            row.querySelector('.value-remove').addEventListener('click', () => {
+                row.remove();
+                refreshValueIndices();
+                updateEnvValueHint();
+            });
+            row.querySelector('.value-input').addEventListener('input', updateEnvValueHint);
+        }
+
+        function makeValueItem(value, idx) {
+            const row = document.createElement('div');
+            row.className = 'value-item';
+            row.innerHTML = `
+                <span class="value-index">${idx + 1}</span>
+                <input type="text" class="value-input" value="">
+                <button type="button" class="btn ghost value-remove" title="删除此项">×</button>
+            `;
+            row.querySelector('.value-input').value = value || '';
+            attachItemHandlers(row);
+            return row;
+        }
+
+        function renderEnvValueEditor(value) {
+            const container = $('envValueEditor');
+            container.innerHTML = '';
+            const items = splitEnvValue(value);
+            items.forEach((v, i) => container.appendChild(makeValueItem(v, i)));
+            updateEnvValueHint();
+        }
+
+        function addValueItem() {
+            const container = $('envValueEditor');
+            const row = makeValueItem('', container.children.length);
+            container.appendChild(row);
+            row.querySelector('.value-input').focus();
+            refreshValueIndices();
+            updateEnvValueHint();
+        }
+
+        async function pasteCsvToEditor() {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (!text) { toast('剪贴板为空', 'warn'); return; }
+                const container = $('envValueEditor');
+                container.innerHTML = '';
+                const parts = text.split(',').map(s => s.trim()).filter(Boolean);
+                if (parts.length === 0) parts.push(text);
+                parts.forEach((v, i) => container.appendChild(makeValueItem(v, i)));
+                refreshValueIndices();
+                updateEnvValueHint();
+                toast(`已导入 ${parts.length} 项`, 'success');
+            } catch (e) {
+                toast('粘贴失败,请手动添加', 'error');
+            }
         }
 
         function updateEnvValueHint() {
-            const v = $('envValue').value;
-            if (!v) {
-                $('envValueHint').textContent = '多个值可换行输入,保存时会自动用逗号连接';
+            const count = document.querySelectorAll('#envValueEditor .value-input').length;
+            const filled = Array.from(document.querySelectorAll('#envValueEditor .value-input'))
+                .filter(i => i.value.trim().length > 0).length;
+            if (count === 0) {
+                $('envValueHint').textContent = '';
                 return;
             }
-            // 预览保存后的样子
-            const joined = joinCsvForSave(v);
-            const itemCount = joined ? joined.split(',').filter(s => s.length > 0).length : 0;
-            if (itemCount > 1) {
-                $('envValueHint').textContent = `将以 ${itemCount} 项 (逗号连接) 保存到青龙`;
+            if (filled <= 1) {
+                $('envValueHint').textContent = '单值,直接保存原文';
             } else {
-                $('envValueHint').textContent = '当前为单个值';
+                $('envValueHint').textContent = `${filled} 项 · 保存时用「,」连接`;
             }
         }
 
@@ -1497,25 +1629,20 @@
                 const e = allEnvs.find(x => (x.id || x._id) === id);
                 $('envModalTitle').textContent = `编辑环境变量: ${e.name}`;
                 $('envName').value = e.name || '';
-                $('envValue').value = splitCsvForEdit(e.value || '');
                 $('envRemarks').value = e.remarks || '';
-                const lines = ($('envValue').value.match(/\n/g) || []).length + ($('envValue').value ? 1 : 0);
-                $('envValueHint').textContent = lines > 1
-                    ? `检测到 ${lines} 项 (按逗号拆分), 保存时会自动用逗号合并`
-                    : '多个值可换行输入,保存时会自动用逗号连接';
+                renderEnvValueEditor(e.value || '');
             } else {
                 $('envModalTitle').textContent = '新增环境变量';
                 $('envName').value = '';
-                $('envValue').value = '';
                 $('envRemarks').value = '';
-                $('envValueHint').textContent = '多个值可换行输入,保存时会自动用逗号连接';
+                renderEnvValueEditor('');
             }
             openModal('envModal');
         }
 
         async function saveEnv() {
             const name = $('envName').value.trim();
-            const value = joinCsvForSave($('envValue').value);
+            const value = collectEnvValueFromEditor();
             const remarks = $('envRemarks').value;
             if (!name) { toast('Key 不能为空', 'error'); return; }
             try {
