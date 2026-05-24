@@ -1244,6 +1244,12 @@
                     || (t.command || '').toLowerCase().includes(kw)
                     || (t.labels || []).join(',').toLowerCase().includes(kw);
             });
+            // 按最后执行时间倒序 (last_execution_time / last_running_time 都是 Unix 秒)
+            filtered.sort((a, b) => {
+                const ta = Number(a.last_execution_time || a.last_running_time || 0);
+                const tb = Number(b.last_execution_time || b.last_running_time || 0);
+                return tb - ta;
+            });
             const body = $('taskBody');
             if (filtered.length === 0) {
                 body.innerHTML = `<tr><td colspan="6"><div class="empty-state">没有匹配的任务</div></td></tr>`;
@@ -1393,6 +1399,12 @@
                 return (e.name || '').toLowerCase().includes(kw)
                     || (e.value || '').toLowerCase().includes(kw)
                     || (e.remarks || '').toLowerCase().includes(kw);
+            });
+            // 按最后更新时间倒序 (青龙 envs 字段: updatedAt / timestamp / createdAt)
+            filtered.sort((a, b) => {
+                const ta = new Date(a.updatedAt || a.timestamp || a.createdAt || 0).getTime();
+                const tb = new Date(b.updatedAt || b.timestamp || b.createdAt || 0).getTime();
+                return tb - ta;
             });
             const body = $('envBody');
             if (filtered.length === 0) {
