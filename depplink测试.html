@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>华为广告 Deeplink 测试</title>
+    <title>广告 Deeplink 测试台</title>
     <style>
         :root {
             --bg: #f4f7fb;
             --surface: #ffffff;
             --surface-soft: #f8fafc;
-            --text: #152033;
-            --muted: #607089;
-            --border: #dbe3ee;
+            --text: #111827;
+            --muted: #5b6b82;
+            --border: #d8e1ed;
             --primary: #0f766e;
             --primary-dark: #115e59;
-            --blue: #2563eb;
             --amber: #b45309;
+            --blue: #2563eb;
             --code-bg: #111827;
-            --shadow: 0 14px 36px rgba(21, 32, 51, .08);
+            --shadow: 0 12px 28px rgba(17, 24, 39, .08);
         }
 
         * {
@@ -32,129 +32,163 @@
             background: var(--bg);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             line-height: 1.5;
-            padding: 20px 14px 28px;
+            padding: 22px 14px 28px;
             -webkit-text-size-adjust: 100%;
         }
 
         .page {
             width: 100%;
-            max-width: 1120px;
+            max-width: 1180px;
             margin: 0 auto;
             padding-top: env(safe-area-inset-top, 0);
             padding-left: env(safe-area-inset-left, 0);
             padding-right: env(safe-area-inset-right, 0);
         }
 
-        .hero {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 320px;
-            gap: 18px;
-            align-items: stretch;
+        .topbar {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 24px;
             margin-bottom: 18px;
-        }
-
-        .intro,
-        .notice,
-        .link-card,
-        .extend {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            box-shadow: var(--shadow);
-        }
-
-        .intro {
-            padding: 24px;
         }
 
         .eyebrow {
             display: inline-flex;
             align-items: center;
             min-height: 28px;
+            margin-bottom: 12px;
             padding: 0 10px;
             border-radius: 999px;
             color: var(--primary-dark);
             background: #dff5ef;
             font-size: 13px;
-            font-weight: 700;
-            margin-bottom: 12px;
+            font-weight: 800;
         }
 
         h1 {
-            max-width: 720px;
-            font-size: 30px;
-            line-height: 1.2;
-            margin-bottom: 10px;
+            font-size: 34px;
+            line-height: 1.15;
             letter-spacing: 0;
+            margin-bottom: 0;
         }
 
-        .summary {
-            max-width: 760px;
-            color: var(--muted);
-            font-size: 16px;
-        }
-
-        .notice {
-            padding: 18px;
-        }
-
-        .notice h2,
-        .extend h2 {
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-
-        .check-list {
+        .status {
             display: grid;
-            gap: 9px;
-            color: var(--muted);
-            font-size: 14px;
-            list-style: none;
+            grid-template-columns: repeat(2, minmax(112px, 1fr));
+            gap: 10px;
+            min-width: 260px;
         }
 
-        .check-list li {
-            position: relative;
-            padding-left: 18px;
+        .stat {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            padding: 12px;
+            box-shadow: 0 6px 16px rgba(17, 24, 39, .05);
         }
 
-        .check-list li::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: .62em;
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--primary);
+        .stat-value {
+            font-size: 24px;
+            font-weight: 900;
+            line-height: 1.1;
         }
 
-        .section-head {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            gap: 12px;
-            margin: 22px 0 12px;
-        }
-
-        .section-head h2 {
-            font-size: 20px;
-        }
-
-        .count {
+        .stat-label {
+            margin-top: 4px;
             color: var(--muted);
             font-size: 13px;
         }
 
-        .link-grid {
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 18px 0 14px;
+        }
+
+        .toolbar h2 {
+            font-size: 22px;
+        }
+
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-start;
+        }
+
+        .tab {
+            min-height: 56px;
+            min-width: 124px;
+            padding: 0 20px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            background: var(--surface);
+            font-size: 22px;
+            font-weight: 900;
+            cursor: pointer;
+            touch-action: manipulation;
+            box-shadow: 0 6px 16px rgba(17, 24, 39, .05);
+        }
+
+        .tab:hover,
+        .tab:focus-visible {
+            border-color: var(--primary);
+            color: var(--primary-dark);
+            outline: none;
+        }
+
+        .tab.active {
+            color: #fff;
+            border-color: var(--primary);
+            background: var(--primary);
+        }
+
+        .projects {
+            display: block;
+        }
+
+        .project {
+            min-width: 0;
+        }
+
+        .project-head {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+            padding: 0 2px;
+        }
+
+        .project-name {
+            font-size: 44px;
+            line-height: 1.15;
+            font-weight: 900;
+        }
+
+        .project-count {
+            flex: 0 0 auto;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .entry-list {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 14px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 12px;
         }
 
         .link-card {
-            display: flex;
-            flex-direction: column;
-            min-height: 100%;
+            min-width: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
             padding: 18px;
         }
 
@@ -163,30 +197,30 @@
             align-items: flex-start;
             justify-content: space-between;
             gap: 12px;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
         }
 
-        .game {
-            color: var(--muted);
-            font-size: 13px;
-            font-weight: 700;
-            margin-bottom: 3px;
+        .channel {
+            color: var(--accent);
+            font-size: 14px;
+            font-weight: 900;
+            margin-bottom: 4px;
         }
 
         .target {
-            font-size: 20px;
-            line-height: 1.3;
+            font-size: 22px;
+            line-height: 1.25;
         }
 
         .badge {
             flex: 0 0 auto;
-            max-width: 44%;
+            max-width: 46%;
             color: #fff;
             background: var(--accent);
             border-radius: 999px;
             padding: 5px 10px;
             font-size: 12px;
-            font-weight: 700;
+            font-weight: 800;
             text-align: center;
             overflow-wrap: anywhere;
         }
@@ -202,14 +236,13 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            min-height: 52px;
-            margin-top: auto;
+            min-height: 54px;
             border-radius: 6px;
             color: #fff;
             background: var(--accent);
             text-decoration: none;
-            font-size: 16px;
-            font-weight: 800;
+            font-size: 17px;
+            font-weight: 900;
             touch-action: manipulation;
             transition: filter .15s, transform .15s;
         }
@@ -231,7 +264,7 @@
         .label {
             color: var(--muted);
             font-size: 12px;
-            font-weight: 700;
+            font-weight: 800;
         }
 
         code,
@@ -256,7 +289,7 @@
             margin-top: 12px;
         }
 
-        button {
+        .copy-btn {
             min-height: 38px;
             padding: 0 12px;
             border: 1px solid var(--border);
@@ -268,8 +301,8 @@
             touch-action: manipulation;
         }
 
-        button:hover,
-        button:focus-visible {
+        .copy-btn:hover,
+        .copy-btn:focus-visible {
             border-color: var(--accent);
             color: var(--accent);
             outline: none;
@@ -280,12 +313,12 @@
         }
 
         summary {
-            color: var(--muted);
-            font-size: 13px;
-            cursor: pointer;
             min-height: 32px;
             display: inline-flex;
             align-items: center;
+            color: var(--muted);
+            font-size: 13px;
+            cursor: pointer;
         }
 
         pre {
@@ -299,24 +332,15 @@
             line-height: 1.55;
         }
 
-        .extend {
-            margin-top: 16px;
-            padding: 18px;
-        }
-
-        .extend p {
+        .empty {
+            grid-column: 1 / -1;
+            border: 1px dashed var(--border);
+            border-radius: 8px;
             color: var(--muted);
+            background: rgba(255, 255, 255, .7);
+            padding: 28px;
+            text-align: center;
             font-size: 14px;
-            margin-bottom: 10px;
-        }
-
-        .snippet {
-            color: #e5e7eb;
-            background: var(--code-bg);
-            border-radius: 6px;
-            padding: 12px;
-            font-size: 12px;
-            overflow-x: auto;
         }
 
         .toast {
@@ -340,107 +364,114 @@
             transform: translate(-50%, -6px);
         }
 
-        @media (max-width: 840px) {
-            .hero {
-                grid-template-columns: 1fr;
+        @media (max-width: 920px) {
+            .topbar {
+                display: block;
             }
 
-            .link-grid {
+            .status {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                min-width: 0;
+                margin-top: 14px;
+            }
+
+            .toolbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .tabs {
+                justify-content: flex-start;
+                width: 100%;
+            }
+
+            .projects {
                 grid-template-columns: 1fr;
             }
         }
 
         @media (max-width: 560px) {
             body {
-                padding: 12px 10px 20px;
-            }
-
-            .intro,
-            .notice,
-            .link-card,
-            .extend {
-                box-shadow: 0 6px 18px rgba(21, 32, 51, .06);
-            }
-
-            .intro {
-                padding: 18px;
+                padding: 14px 10px 22px;
             }
 
             h1 {
-                font-size: 24px;
+                font-size: 28px;
             }
 
-            .summary {
-                font-size: 15px;
+            .status {
+                gap: 8px;
             }
 
-            .section-head {
+            .stat {
+                padding: 10px;
+            }
+
+            .stat-value {
+                font-size: 22px;
+            }
+
+            .project-head,
+            .card-top {
                 align-items: flex-start;
                 flex-direction: column;
-                gap: 3px;
+                gap: 8px;
             }
 
-            .card-top {
-                flex-direction: column;
-                gap: 8px;
+            .project-name {
+                font-size: 40px;
+            }
+
+            .tab {
+                flex: 1 1 132px;
+                min-width: 0;
+                font-size: 21px;
             }
 
             .badge {
                 max-width: 100%;
             }
 
-            .target {
-                font-size: 19px;
+            .link-card {
+                padding: 16px;
             }
 
             .open-link {
-                min-height: 56px;
+                min-height: 58px;
             }
 
-            .actions button {
-                flex: 1 1 130px;
+            .actions .copy-btn {
+                flex: 1 1 132px;
             }
         }
     </style>
 </head>
 <body>
     <main class="page">
-        <section class="hero">
-            <div class="intro">
-                <div class="eyebrow">华为渠道广告测试</div>
-                <h1>Deeplink 拉起测试页</h1>
-                <p class="summary">用于华为广告投放或归因链路验证。测试人员在手机浏览器中打开本页，点击对应游戏的测试入口，确认华为渠道包是否能被广告落地链接正确拉起。</p>
+        <header class="topbar">
+            <div>
+                <div class="eyebrow">内部测试工具</div>
+                <h1>广告 Deeplink 测试台</h1>
             </div>
 
-            <aside class="notice">
-                <h2>测试前提</h2>
-                <ul class="check-list">
-                    <li>手机已安装对应的华为渠道测试包。</li>
-                    <li>使用手机浏览器打开本页面并点击按钮。</li>
-                    <li>如果无法拉起，优先检查包体是否注册了对应 Deeplink。</li>
-                </ul>
-            </aside>
-        </section>
+            <div class="status" aria-label="当前测试入口统计">
+                <div class="stat">
+                    <div class="stat-value" id="projectCount">0</div>
+                    <div class="stat-label">项目</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="entryCount">0</div>
+                    <div class="stat-label">当前入口</div>
+                </div>
+            </div>
+        </header>
 
-        <div class="section-head">
-            <h2>当前测试入口</h2>
-            <span class="count" id="linkCount"></span>
+        <div class="toolbar">
+            <h2>选择项目</h2>
+            <nav class="tabs" id="projectTabs" aria-label="项目导航"></nav>
         </div>
 
-        <section class="link-grid" id="appList"></section>
-
-        <section class="extend">
-            <h2>后续扩展</h2>
-            <p>未来新增广告测试链接时，直接在页面脚本里的 <code>LINKS</code> 数组追加一项即可，页面会自动生成卡片。</p>
-            <pre class="snippet">{
-    game: '游戏名称',
-    target: '广告落地页名称',
-    badge: '渠道或页面标识',
-    desc: '测试目的说明',
-    color: '#2563eb',
-    url: 'your-scheme://page/path?query=true'
-}</pre>
-        </section>
+        <section class="projects" id="projectList"></section>
     </main>
 
     <div class="toast" id="toast" role="status" aria-live="polite">已复制</div>
@@ -448,22 +479,30 @@
     <script>
         const LINKS = [
             {
-                game: '新足',
+                project: '新足',
+                channel: '华为',
+                channelLabel: '华为广告',
+                activity: '单活动',
                 target: '7 日签到页',
-                badge: 'Huawei / 7daycheckin',
-                desc: '用于验证华为广告点击后能否拉起新足华为渠道包并进入 7 日签到落地页。',
+                badge: '7daycheckin',
+                desc: '验证华为广告点击后，是否能拉起新足华为渠道包并进入 7 日签到落地页。',
                 color: '#0f766e',
                 url: 'platformsdk-com.galasports.championsfc.huawei://page/7daycheckin',
             },
             {
-                game: '球会',
+                project: '球会',
+                channel: '华为',
+                channelLabel: '华为广告',
+                activity: '单活动',
                 target: '世界杯活动页',
-                badge: 'Huawei / worldcup',
-                desc: '用于验证华为广告点击后能否拉起球会华为渠道包，并携带 log_switch=true 进入世界杯落地页。',
+                badge: 'worldcup',
+                desc: '验证华为广告点击后，是否能拉起球会华为渠道包，并携带 log_switch=true 进入世界杯落地页。',
                 color: '#b45309',
                 url: 'platformsdk-com.galasports.totalfootball.a.huawei://page/worldcup?log_switch=true',
             },
         ];
+
+        let currentProject = LINKS[0].project;
 
         function escapeHtml(text) {
             return String(text).replace(/[&<>"']/g, function (char) {
@@ -481,37 +520,93 @@
             return 'adb shell am start -W -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -d "' + url + '"';
         }
 
-        function render() {
-            document.getElementById('linkCount').textContent = LINKS.length + ' 个链接';
-            document.getElementById('appList').innerHTML = LINKS.map(function (item, index) {
-                const adb = toAdbCommand(item.url);
+        function getProjects() {
+            return Array.from(new Set(LINKS.map(function (item) {
+                return item.project;
+            })));
+        }
 
-                return `
-                    <article class="link-card" style="--accent:${item.color}">
-                        <div class="card-top">
-                            <div>
-                                <div class="game">${escapeHtml(item.game)}</div>
-                                <h3 class="target">${escapeHtml(item.target)}</h3>
-                            </div>
-                            <span class="badge">${escapeHtml(item.badge)}</span>
-                        </div>
-                        <p class="desc">${escapeHtml(item.desc)}</p>
-                        <a class="open-link" href="${item.url}" aria-label="拉起${escapeHtml(item.game)}${escapeHtml(item.target)}">手机点击拉起</a>
-                        <div class="meta">
-                            <div class="label">Deeplink</div>
-                            <div class="scheme">${escapeHtml(item.url)}</div>
-                        </div>
-                        <div class="actions">
-                            <button type="button" onclick="copyText(${index}, 'url')">复制 Deeplink</button>
-                            <button type="button" onclick="copyText(${index}, 'adb')">复制 ADB 备用命令</button>
-                        </div>
-                        <details>
-                            <summary>查看 ADB 备用调试命令</summary>
-                            <pre>${escapeHtml(adb)}</pre>
-                        </details>
-                    </article>
-                `;
+        function getCurrentEntries() {
+            return LINKS.map(function (item, index) {
+                return { item: item, index: index };
+            }).filter(function (entry) {
+                return entry.item.project === currentProject;
+            });
+        }
+
+        function renderProjectTabs() {
+            document.getElementById('projectTabs').innerHTML = getProjects().map(function (project) {
+                const active = project === currentProject ? ' active' : '';
+                return '<button class="tab' + active + '" type="button" data-project="' + escapeHtml(project) + '">' + escapeHtml(project) + '</button>';
             }).join('');
+
+            document.querySelectorAll('#projectTabs .tab').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    setProject(button.dataset.project);
+                });
+            });
+        }
+
+        function renderProjectPage() {
+            const entries = getCurrentEntries();
+            const projects = getProjects();
+
+            document.getElementById('projectCount').textContent = projects.length;
+            document.getElementById('entryCount').textContent = entries.length;
+
+            if (entries.length === 0) {
+                document.getElementById('projectList').innerHTML = '<div class="empty">当前筛选下没有测试入口</div>';
+                return;
+            }
+
+            document.getElementById('projectList').innerHTML = `
+                <section class="project" aria-label="${escapeHtml(currentProject)}">
+                    <div class="project-head">
+                        <h3 class="project-name">${escapeHtml(currentProject)}</h3>
+                        <span class="project-count">${entries.length} 个入口</span>
+                    </div>
+                    <div class="entry-list">
+                        ${entries.map(renderEntry).join('')}
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderEntry(entry) {
+            const item = entry.item;
+            const index = entry.index;
+            const adb = toAdbCommand(item.url);
+
+            return `
+                <article class="link-card" style="--accent:${item.color}">
+                    <div class="card-top">
+                        <div>
+                            <div class="channel">${escapeHtml(item.channelLabel)} · ${escapeHtml(item.activity)}</div>
+                            <h4 class="target">${escapeHtml(item.target)}</h4>
+                        </div>
+                        <span class="badge">${escapeHtml(item.badge)}</span>
+                    </div>
+                    <p class="desc">${escapeHtml(item.desc)}</p>
+                    <a class="open-link" href="${item.url}" aria-label="拉起${escapeHtml(item.project)}${escapeHtml(item.target)}">手机点击拉起</a>
+                    <div class="meta">
+                        <div class="label">Deeplink</div>
+                        <div class="scheme">${escapeHtml(item.url)}</div>
+                    </div>
+                    <div class="actions">
+                        <button class="copy-btn" type="button" onclick="copyText(${index}, 'url')">复制 Deeplink</button>
+                        <button class="copy-btn" type="button" onclick="copyText(${index}, 'adb')">复制 ADB 备用命令</button>
+                    </div>
+                    <details>
+                        <summary>查看 ADB 备用调试命令</summary>
+                        <pre>${escapeHtml(adb)}</pre>
+                    </details>
+                </article>
+            `;
+        }
+
+        function setProject(project) {
+            currentProject = project;
+            render();
         }
 
         function copyText(index, key) {
@@ -545,6 +640,11 @@
             window.__toastTimer = setTimeout(function () {
                 toast.classList.remove('show');
             }, 1500);
+        }
+
+        function render() {
+            renderProjectTabs();
+            renderProjectPage();
         }
 
         render();
