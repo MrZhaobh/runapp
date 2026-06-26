@@ -32,7 +32,7 @@
 
         .container {
             width: 100%;
-            max-width: 980px;
+            max-width: 1120px;
             margin: 0 auto;
             /* 避开刘海/打孔屏 (APP/全面屏需要), 桌面浏览器 env() 为 0 不影响 */
             padding-top: env(safe-area-inset-top, 0);
@@ -83,8 +83,8 @@
 
         .sections {
             display: grid;
-            grid-template-columns: minmax(280px, .9fr) minmax(0, 1.35fr);
-            gap: 22px;
+            grid-template-columns: 1fr;
+            gap: 26px;
             align-items: start;
         }
 
@@ -110,12 +110,12 @@
 
         .section-grid {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 14px;
         }
 
         .section[data-group="other"] .section-grid {
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         }
 
         .nav-card {
@@ -215,10 +215,10 @@
             }
 
             .sections {
-                grid-template-columns: 1fr;
                 gap: 20px;
             }
 
+            .section-grid,
             .section[data-group="other"] .section-grid {
                 grid-template-columns: 1fr 1fr;
                 gap: 10px;
@@ -251,6 +251,7 @@
         }
 
         @media (max-width: 380px) {
+            .section-grid,
             .section[data-group="other"] .section-grid {
                 grid-template-columns: 1fr;
             }
