@@ -161,6 +161,10 @@
       return (contentStart >= 0 ? afterSource.slice(contentStart) : afterSource).trim();
     }
 
+    function extractPublishedAt(text) {
+      return text.match(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/)?.[0] || '';
+    }
+
     function extractLinks(html) {
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const found = new Map();
@@ -169,7 +173,12 @@
           const url = new URL(rawUrl, sourceUrl);
           if (!/^https?:$/.test(url.protocol)) return;
           const readableText = cleanPostText(text).replace(/https?:\/\/[^\s<>"'`]+/g, '').trim();
-          found.set(url.href, found.get(url.href) || { url: url.href, text: readableText || url.href, host: url.host });
+          found.set(url.href, found.get(url.href) || {
+            url: url.href,
+            text: readableText || url.href,
+            host: url.host,
+            publishedAt: extractPublishedAt(text),
+          });
         } catch { /* 忽略不完整地址 */ }
       };
 
@@ -180,7 +189,7 @@
         }
       }
 
-      return [...found.values()];
+      return [...found.values()].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
     }
 
     function openReader(item) {
@@ -242,7 +251,7 @@
         domain.textContent = item.host;
         const title = document.createElement('h2');
         title.className = 'title';
-        title.textContent = item.text;
+        title.textContent = `${item.publishedAt ? `${item.publishedAt} · ` : ''}${item.text}`;
         meta.append(badge, domain);
         main.append(meta, title);
 
