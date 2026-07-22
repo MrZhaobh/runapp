@@ -49,7 +49,8 @@
     .badge { padding: 3px 8px; border-radius: 999px; color: #2457a5; background: var(--accent-soft); font-size: 12px; font-weight: 700; }
     .domain { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
     .title { display: -webkit-box; margin: 0; overflow: hidden; color: var(--ink); font-size: 16px; font-weight: 680; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-    .url { display: none; }
+    .url { display: block; overflow: hidden; margin: 6px 0 0; color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+    .url:hover { text-decoration: underline; }
     .actions { display: flex; align-items: center; gap: 8px; }
     .read, .speak, .external, .close { min-width: 44px; min-height: 44px; border-radius: 10px; cursor: pointer; }
     .read { display: grid; place-items: center; padding: 0 13px; border: 1px solid #c8d9fc; color: #114da7; background: #f4f8ff; font-weight: 700; text-decoration: none; }
@@ -165,6 +166,12 @@
       return text.match(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/)?.[0] || '';
     }
 
+    function cleanLinkUrl(rawUrl) {
+      return rawUrl
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .replace(/[，。；！？、】【）》〉]+$/u, '');
+    }
+
     function extractLinks(html) {
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const found = new Map();
@@ -185,7 +192,7 @@
       for (const link of doc.querySelectorAll('a[href]')) {
         const postText = visibleText(link);
         for (const rawUrl of postText.match(/https?:\/\/[^\s<>"'`]+/g) || []) {
-          add(rawUrl.replace(/[，。；！？、】【）》〉]+$/, ''), postText);
+          add(cleanLinkUrl(rawUrl), postText);
         }
       }
 
@@ -245,21 +252,27 @@
         meta.className = 'meta';
         const badge = document.createElement('span');
         badge.className = 'badge';
-        badge.textContent = '正文链接';
+        badge.textContent = '正文短链';
         const domain = document.createElement('span');
         domain.className = 'domain';
         domain.textContent = item.host;
         const title = document.createElement('h2');
         title.className = 'title';
         title.textContent = `${item.publishedAt ? `${item.publishedAt} · ` : ''}${item.text}`;
+        const url = document.createElement('a');
+        url.className = 'url';
+        url.href = item.url;
+        url.target = '_blank';
+        url.rel = 'noopener noreferrer';
+        url.textContent = item.url;
         meta.append(badge, domain);
-        main.append(meta, title);
+        main.append(meta, title, url);
 
         const actions = document.createElement('div');
         actions.className = 'actions';
         const read = document.createElement(item.host === 't.cn' ? 'a' : 'button');
         read.className = 'read';
-        read.textContent = item.host === 't.cn' ? '打开原文' : '站内打开';
+        read.textContent = item.host === 't.cn' ? '打开正文' : '站内打开';
         if (read.tagName === 'A') {
           read.href = item.url;
           read.target = '_blank';
