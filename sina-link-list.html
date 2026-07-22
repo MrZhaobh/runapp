@@ -47,7 +47,6 @@
     .card-main { min-width: 0; }
     .meta { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
     .badge { padding: 3px 8px; border-radius: 999px; color: #2457a5; background: var(--accent-soft); font-size: 12px; font-weight: 700; }
-    .domain { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
     .title { display: -webkit-box; margin: 0; overflow: hidden; color: var(--ink); font-size: 16px; font-weight: 680; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
     .url { display: block; overflow: hidden; margin: 6px 0 0; color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
     .url:hover { text-decoration: underline; }
@@ -57,6 +56,7 @@
     .read:hover { background: #eaf1ff; }
     .speak { padding: 0 12px; border: 1px solid var(--line); color: #40516a; background: #fff; font-weight: 700; }
     .speak:hover { border-color: #b9cdf7; color: var(--accent); }
+    .speak.is-speaking { border-color: #f3b08a; color: #a33a14; background: #fff0eb; }
     .external { display: grid; place-items: center; width: 44px; border: 1px solid var(--line); color: #40516a; background: #fff; text-decoration: none; font-size: 20px; line-height: 1; }
     .external:hover { border-color: #b9cdf7; color: var(--accent); }
     .empty { padding: 40px 18px; border: 1px dashed #b9c6d8; border-radius: 14px; color: var(--muted); text-align: center; }
@@ -94,7 +94,7 @@
       <div>
         <p class="eyebrow">Personal reader</p>
         <h1>新浪阅读列表</h1>
-        <p class="intro">只整理微博正文里的跳转链接。点击“打开原文”会直接跳转到目标文章。</p>
+        <p class="intro">自动提取微博正文里的跳转链接，点击即可打开原文。</p>
       </div>
       <a class="source-link" href="https://www.sina.cn/media/7919876311" target="_blank" rel="noopener noreferrer">查看新浪原页</a>
     </header>
@@ -125,7 +125,8 @@
 
   <script>
     const sourceUrl = 'https://www.sina.cn/media/7919876311';
-    const proxyUrl = 'https://blue-morning-b40f.zbh.workers.dev/sina';
+    const workerOrigin = 'https://web-cors-bridge.zbh.workers.dev';
+    const proxyUrl = `${workerOrigin}/fetch?url=${encodeURIComponent(sourceUrl)}`;
     const search = document.getElementById('search');
     const refreshButton = document.getElementById('refresh');
     const status = document.getElementById('status');
@@ -140,6 +141,7 @@
     let allItems = [];
     let currentItem = null;
     let utterance = null;
+    let activeSpeakButton = null;
 
     function setStatus(message, isError = false) {
       status.textContent = message;
@@ -207,24 +209,49 @@
       if (!readerDialog.open) readerDialog.showModal();
     }
 
+    function resetSpeakButton() {
+      if (!activeSpeakButton) return;
+      activeSpeakButton.textContent = '朗读';
+      activeSpeakButton.classList.remove('is-speaking');
+      activeSpeakButton = null;
+    }
+
     function stopSpeaking() {
       speechSynthesis.cancel();
       utterance = null;
       readerStop.disabled = true;
+      resetSpeakButton();
     }
 
-    function speak(item) {
+    function preferredChineseVoice() {
+      return speechSynthesis.getVoices().find((voice) => /^zh([_-]|$)/i.test(voice.lang)) || null;
+    }
+
+    function speak(item, button = null) {
       if (!('speechSynthesis' in window)) {
         setStatus('当前浏览器不支持语音朗读。', true);
+        return;
+      }
+      if (button && activeSpeakButton === button) {
+        stopSpeaking();
+        setStatus('已停止朗读。');
         return;
       }
       stopSpeaking();
       utterance = new SpeechSynthesisUtterance(item.text);
       utterance.lang = 'zh-CN';
       utterance.rate = 1;
+      utterance.voice = preferredChineseVoice();
+      activeSpeakButton = button;
+      if (button) {
+        button.textContent = '停止';
+        button.classList.add('is-speaking');
+      }
       utterance.onstart = () => { readerStop.disabled = false; setStatus('正在朗读这条微博内容…'); };
-      utterance.onend = () => { readerStop.disabled = true; setStatus('朗读完成。'); };
-      utterance.onerror = () => { readerStop.disabled = true; setStatus('语音朗读未能开始，请重试。', true); };
+      utterance.onend = () => { readerStop.disabled = true; resetSpeakButton(); setStatus('朗读完成。'); };
+      utterance.onerror = () => { readerStop.disabled = true; resetSpeakButton(); setStatus('语音朗读未能开始，请用 Chrome 打开并确认系统已安装中文文字转语音。', true); };
+      // Android Chrome 有时会暂停新建的朗读队列，恢复一次可提高首次朗读成功率。
+      speechSynthesis.resume();
       speechSynthesis.speak(utterance);
     }
 
@@ -252,10 +279,7 @@
         meta.className = 'meta';
         const badge = document.createElement('span');
         badge.className = 'badge';
-        badge.textContent = '正文短链';
-        const domain = document.createElement('span');
-        domain.className = 'domain';
-        domain.textContent = item.host;
+        badge.textContent = '正文链接';
         const title = document.createElement('h2');
         title.className = 'title';
         title.textContent = `${item.publishedAt ? `${item.publishedAt} · ` : ''}${item.text}`;
@@ -265,27 +289,22 @@
         url.target = '_blank';
         url.rel = 'noopener noreferrer';
         url.textContent = item.url;
-        meta.append(badge, domain);
+        meta.append(badge);
         main.append(meta, title, url);
 
         const actions = document.createElement('div');
         actions.className = 'actions';
-        const read = document.createElement(item.host === 't.cn' ? 'a' : 'button');
+        const read = document.createElement('a');
         read.className = 'read';
-        read.textContent = item.host === 't.cn' ? '打开正文' : '站内打开';
-        if (read.tagName === 'A') {
-          read.href = item.url;
-          read.target = '_blank';
-          read.rel = 'noopener noreferrer';
-        } else {
-          read.type = 'button';
-          read.addEventListener('click', () => openReader(item));
-        }
+        read.textContent = '打开正文';
+        read.href = item.url;
+        read.target = '_blank';
+        read.rel = 'noopener noreferrer';
         const speakButton = document.createElement('button');
         speakButton.className = 'speak';
         speakButton.type = 'button';
         speakButton.textContent = '朗读';
-        speakButton.addEventListener('click', () => speak(item));
+        speakButton.addEventListener('click', () => speak(item, speakButton));
         actions.append(read, speakButton);
         card.append(main, actions);
         fragment.append(card);
