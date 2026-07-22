@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>新浪阅读列表</title>
+  <style>
+    :root {
+      --canvas: #f5f7fb;
+      --surface: #ffffff;
+      --ink: #172033;
+      --muted: #66758a;
+      --line: #dfe6ef;
+      --accent: #155eef;
+      --accent-soft: #eaf1ff;
+      --shadow: 0 12px 30px rgb(23 32 51 / 8%);
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100dvh; background: var(--canvas); color: var(--ink); font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; }
+    button, input { font: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid #8db6ff; outline-offset: 2px; }
+
+    .shell { width: min(920px, calc(100% - 32px)); margin: 0 auto; padding: 48px 0 72px; }
+    .masthead { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
+    .eyebrow { margin: 0 0 6px; color: var(--accent); font-size: 13px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(28px, 5vw, 40px); letter-spacing: -.035em; line-height: 1.15; }
+    .intro { max-width: 610px; margin: 10px 0 0; color: var(--muted); }
+    .source-link { color: var(--accent); font-size: 14px; font-weight: 650; text-decoration: none; white-space: nowrap; }
+    .source-link:hover { text-decoration: underline; }
+
+    .controls { display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 4px 14px rgb(23 32 51 / 4%); }
+    .search { min-width: 0; height: 46px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: #fff; }
+    .refresh { min-height: 46px; padding: 0 16px; border: 0; border-radius: 10px; color: #fff; background: var(--accent); font-weight: 700; cursor: pointer; transition: background .18s, transform .18s; }
+    .refresh:hover { background: #004cda; }
+    .refresh:active { transform: scale(.98); }
+    .refresh:disabled { cursor: wait; opacity: .65; }
+    .status-row { display: flex; justify-content: space-between; gap: 16px; align-items: center; min-height: 44px; padding: 16px 2px 8px; }
+    .status { margin: 0; color: var(--muted); font-size: 14px; }
+    .status.error { color: #b42318; }
+    .count { color: var(--muted); font-size: 13px; white-space: nowrap; }
+
+    .list { display: grid; gap: 10px; }
+    .card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 18px 18px 18px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 2px 8px rgb(23 32 51 / 3%); transition: border-color .18s, box-shadow .18s, transform .18s; }
+    .card:hover { border-color: #b9cdf7; box-shadow: var(--shadow); transform: translateY(-1px); }
+    .card-main { min-width: 0; }
+    .meta { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .badge { padding: 3px 8px; border-radius: 999px; color: #2457a5; background: var(--accent-soft); font-size: 12px; font-weight: 700; }
+    .domain { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    .title { display: -webkit-box; margin: 0; overflow: hidden; color: var(--ink); font-size: 16px; font-weight: 680; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+    .url { display: none; }
+    .actions { display: flex; align-items: center; gap: 8px; }
+    .read, .speak, .external, .close { min-width: 44px; min-height: 44px; border-radius: 10px; cursor: pointer; }
+    .read { display: grid; place-items: center; padding: 0 13px; border: 1px solid #c8d9fc; color: #114da7; background: #f4f8ff; font-weight: 700; text-decoration: none; }
+    .read:hover { background: #eaf1ff; }
+    .speak { padding: 0 12px; border: 1px solid var(--line); color: #40516a; background: #fff; font-weight: 700; }
+    .speak:hover { border-color: #b9cdf7; color: var(--accent); }
+    .external { display: grid; place-items: center; width: 44px; border: 1px solid var(--line); color: #40516a; background: #fff; text-decoration: none; font-size: 20px; line-height: 1; }
+    .external:hover { border-color: #b9cdf7; color: var(--accent); }
+    .empty { padding: 40px 18px; border: 1px dashed #b9c6d8; border-radius: 14px; color: var(--muted); text-align: center; }
+
+    dialog { width: min(1100px, calc(100% - 32px)); height: min(860px, calc(100dvh - 32px)); padding: 0; overflow: hidden; border: 0; border-radius: 16px; box-shadow: 0 24px 80px rgb(0 0 0 / 30%); }
+    dialog::backdrop { background: rgb(16 24 40 / 58%); backdrop-filter: blur(3px); }
+    .reader { display: grid; height: 100%; grid-template-rows: auto 1fr; background: #fff; }
+    .reader-bar { display: flex; min-width: 0; gap: 12px; align-items: center; padding: 12px 14px 12px 18px; border-bottom: 1px solid var(--line); }
+    .reader-title { flex: 1; min-width: 0; overflow: hidden; font-size: 15px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .reader-open, .reader-speak, .reader-stop { min-height: 44px; padding: 0 12px; border-radius: 10px; font-size: 14px; font-weight: 700; white-space: nowrap; }
+    .reader-open { color: #114da7; background: #f4f8ff; text-decoration: none; }
+    .reader-speak { border: 1px solid var(--line); color: #40516a; background: #fff; cursor: pointer; }
+    .reader-stop { border: 0; color: #a33a14; background: #fff0eb; cursor: pointer; }
+    .reader-stop:disabled { display: none; }
+    .close { width: 44px; border: 1px solid var(--line); background: #fff; color: var(--ink); font-size: 22px; }
+    iframe { width: 100%; height: 100%; border: 0; background: #fff; }
+
+    @media (max-width: 640px) {
+      .shell { width: min(100% - 24px, 920px); padding-top: 28px; }
+      .masthead { display: block; margin-bottom: 20px; }
+      .source-link { display: inline-block; margin-top: 14px; }
+      .card { grid-template-columns: 1fr; gap: 14px; padding: 16px; }
+      .actions { justify-content: flex-end; }
+      .read { flex: 1; }
+      dialog { width: 100%; height: 100dvh; max-height: none; border-radius: 0; }
+      .reader-open { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">Personal reader</p>
+        <h1>新浪阅读列表</h1>
+        <p class="intro">只整理微博正文里的跳转链接。点击“打开原文”会直接跳转到目标文章。</p>
+      </div>
+      <a class="source-link" href="https://www.sina.cn/media/7919876311" target="_blank" rel="noopener noreferrer">查看新浪原页</a>
+    </header>
+
+    <section class="controls" aria-label="列表控制">
+      <input id="search" class="search" type="search" placeholder="搜索标题或网址" aria-label="搜索文章">
+      <button id="refresh" class="refresh" type="button">刷新列表</button>
+    </section>
+    <div class="status-row">
+      <p id="status" class="status" role="status">正在读取页面…</p>
+      <span id="count" class="count"></span>
+    </div>
+    <section id="links" class="list" aria-live="polite" aria-label="链接列表"></section>
+  </main>
+
+  <dialog id="readerDialog" aria-label="站内阅读">
+    <section class="reader">
+      <header class="reader-bar">
+        <strong id="readerTitle" class="reader-title">正在打开</strong>
+        <a id="readerOpen" class="reader-open" href="#" target="_blank" rel="noopener noreferrer">新窗口打开</a>
+        <button id="readerSpeak" class="reader-speak" type="button">朗读</button>
+        <button id="readerStop" class="reader-stop" type="button" disabled>停止</button>
+        <button id="readerClose" class="close" type="button" aria-label="关闭阅读">×</button>
+      </header>
+      <iframe id="readerFrame" title="文章内容" referrerpolicy="no-referrer"></iframe>
+    </section>
+  </dialog>
+
+  <script>
+    const sourceUrl = 'https://www.sina.cn/media/7919876311';
+    const proxyUrl = 'https://blue-morning-b40f.zbh.workers.dev/sina';
+    const search = document.getElementById('search');
+    const refreshButton = document.getElementById('refresh');
+    const status = document.getElementById('status');
+    const count = document.getElementById('count');
+    const links = document.getElementById('links');
+    const readerDialog = document.getElementById('readerDialog');
+    const readerTitle = document.getElementById('readerTitle');
+    const readerFrame = document.getElementById('readerFrame');
+    const readerOpen = document.getElementById('readerOpen');
+    const readerSpeak = document.getElementById('readerSpeak');
+    const readerStop = document.getElementById('readerStop');
+    let allItems = [];
+    let currentItem = null;
+    let utterance = null;
+
+    function setStatus(message, isError = false) {
+      status.textContent = message;
+      status.classList.toggle('error', isError);
+    }
+
+    function visibleText(link) {
+      const text = link.textContent.replace(/\s+/g, ' ').trim();
+      return text || link.href;
+    }
+
+    function cleanPostText(text) {
+      const withoutCounts = text.replace(/\s+\d+\s+\d+\s+\d+$/, '').trim();
+      const timestamp = withoutCounts.match(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}\s*来自\s*/);
+      if (!timestamp) return withoutCounts;
+      const afterSource = withoutCounts.slice(timestamp.index + timestamp[0].length);
+      const withoutDevice = afterSource.replace(/^HUAWEI\s+P60\s+Pro\s*/i, '');
+      if (withoutDevice !== afterSource) return withoutDevice.trim();
+      const contentStart = afterSource.search(/[\u4e00-\u9fff#@\[【]/);
+      return (contentStart >= 0 ? afterSource.slice(contentStart) : afterSource).trim();
+    }
+
+    function extractLinks(html) {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const found = new Map();
+      const add = (rawUrl, text) => {
+        try {
+          const url = new URL(rawUrl, sourceUrl);
+          if (!/^https?:$/.test(url.protocol)) return;
+          const readableText = cleanPostText(text).replace(/https?:\/\/[^\s<>"'`]+/g, '').trim();
+          found.set(url.href, found.get(url.href) || { url: url.href, text: readableText || url.href, host: url.host });
+        } catch { /* 忽略不完整地址 */ }
+      };
+
+      for (const link of doc.querySelectorAll('a[href]')) {
+        const postText = visibleText(link);
+        for (const rawUrl of postText.match(/https?:\/\/[^\s<>"'`]+/g) || []) {
+          add(rawUrl.replace(/[，。；！？、】【）》〉]+$/, ''), postText);
+        }
+      }
+
+      return [...found.values()];
+    }
+
+    function openReader(item) {
+      currentItem = item;
+      readerTitle.textContent = item.text;
+      readerOpen.href = item.url;
+      readerFrame.src = item.url;
+      if (!readerDialog.open) readerDialog.showModal();
+    }
+
+    function stopSpeaking() {
+      speechSynthesis.cancel();
+      utterance = null;
+      readerStop.disabled = true;
+    }
+
+    function speak(item) {
+      if (!('speechSynthesis' in window)) {
+        setStatus('当前浏览器不支持语音朗读。', true);
+        return;
+      }
+      stopSpeaking();
+      utterance = new SpeechSynthesisUtterance(item.text);
+      utterance.lang = 'zh-CN';
+      utterance.rate = 1;
+      utterance.onstart = () => { readerStop.disabled = false; setStatus('正在朗读这条微博内容…'); };
+      utterance.onend = () => { readerStop.disabled = true; setStatus('朗读完成。'); };
+      utterance.onerror = () => { readerStop.disabled = true; setStatus('语音朗读未能开始，请重试。', true); };
+      speechSynthesis.speak(utterance);
+    }
+
+    function render() {
+      const keyword = search.value.trim().toLowerCase();
+      const items = allItems.filter(item => !keyword || `${item.text} ${item.url}`.toLowerCase().includes(keyword));
+      links.replaceChildren();
+      count.textContent = `显示 ${items.length} / ${allItems.length} 条`;
+
+      if (!items.length) {
+        const empty = document.createElement('p');
+        empty.className = 'empty';
+        empty.textContent = '没有匹配的链接。';
+        links.append(empty);
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      for (const item of items) {
+        const card = document.createElement('article');
+        card.className = 'card';
+        const main = document.createElement('div');
+        main.className = 'card-main';
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = '正文链接';
+        const domain = document.createElement('span');
+        domain.className = 'domain';
+        domain.textContent = item.host;
+        const title = document.createElement('h2');
+        title.className = 'title';
+        title.textContent = item.text;
+        meta.append(badge, domain);
+        main.append(meta, title);
+
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+        const read = document.createElement(item.host === 't.cn' ? 'a' : 'button');
+        read.className = 'read';
+        read.textContent = item.host === 't.cn' ? '打开原文' : '站内打开';
+        if (read.tagName === 'A') {
+          read.href = item.url;
+          read.target = '_blank';
+          read.rel = 'noopener noreferrer';
+        } else {
+          read.type = 'button';
+          read.addEventListener('click', () => openReader(item));
+        }
+        const speakButton = document.createElement('button');
+        speakButton.className = 'speak';
+        speakButton.type = 'button';
+        speakButton.textContent = '朗读';
+        speakButton.addEventListener('click', () => speak(item));
+        actions.append(read, speakButton);
+        card.append(main, actions);
+        fragment.append(card);
+      }
+      links.append(fragment);
+    }
+
+    async function loadLinks() {
+      refreshButton.disabled = true;
+      setStatus('正在从新浪读取最新链接…');
+      try {
+        const response = await fetch(proxyUrl, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        allItems = extractLinks(await response.text());
+        render();
+        setStatus(`已读取 ${allItems.length} 条链接。`);
+      } catch (error) {
+        allItems = [];
+        render();
+        setStatus('读取失败，请稍后重试。', true);
+        console.error('无法读取新浪页面：', error);
+      } finally {
+        refreshButton.disabled = false;
+      }
+    }
+
+    search.addEventListener('input', render);
+    refreshButton.addEventListener('click', loadLinks);
+    readerSpeak.addEventListener('click', () => { if (currentItem) speak(currentItem); });
+    readerStop.addEventListener('click', stopSpeaking);
+    document.getElementById('readerClose').addEventListener('click', () => readerDialog.close());
+    readerDialog.addEventListener('close', () => { stopSpeaking(); readerFrame.src = 'about:blank'; });
+    loadLinks();
+  </script>
+</body>
+</html>
